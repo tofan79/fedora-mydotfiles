@@ -1,0 +1,55 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "agent_servers": {
+    "opencode": {
+      "favorite_config_option_values": {
+        "model": [
+          "opencode-go/kimi-k2.6"
+        ]
+      },
+      "default_config_options": {
+        "model": "opencode-go/kimi-k2.6",
+        "mode": "plan"
+      },
+      "type": "registry"
+    }
+  },
+  "icon_theme": "Catppuccin Mocha",
+  "title_bar": {
+    "show_sign_in": false
+  },
+  "helix_mode": false,
+  "collaboration_panel": {
+    "button": false
+  },
+  "agent": {
+    "default_width": 300.0,
+    "button": true,
+    "favorite_models": [],
+    "model_parameters": []
+  },
+  "git_panel": {
+    "file_icons": true,
+    "tree_view": true
+  },
+  "terminal": {
+    "dock": "bottom"
+  },
+  "project_panel": {
+    "git_status_indicator": true
+  },
+  "ui_font_size": 16,
+  "buffer_font_size": 15,
+  "theme": {
+    "mode": "dark",
+    "light": "One Light",
+    "dark": "Noctalia Dark"
+  },
+}
