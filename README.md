@@ -31,6 +31,12 @@
 | SDDM | `sudo dnf install sddm` |
 | jq | `sudo dnf install jq` |
 
+## Screen Toolkit (Noctalia Plugin)
+| Package | Install |
+|---|---|
+| Core | `sudo dnf install grim slurp hyprpicker wl-clipboard tesseract tesseract-langpack-eng ImageMagick zbar curl translate-shell ffmpeg jq wl-screenrec python3 python3-gobject xdg-desktop-portal` |
+| gifski | `cargo install gifski` |
+
 ## System Tools
 | Tool | Cara Install |
 |---|---|
