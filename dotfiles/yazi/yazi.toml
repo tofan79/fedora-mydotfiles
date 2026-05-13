@@ -1,0 +1,16 @@
+[manager]
+ratio = [1, 4, 3]
+show_hidden = false
+sort_by = "natural"
+sort_dir_first = true
+
+[plugin]
+prepend_previewers = []
+
+[opener]
+edit = [
+	{ run = 'nvim "$@"', block = true },
+]
+open = [
+	{ run = 'xdg-open "$@"', orphan = true },
+]

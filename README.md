@@ -1,78 +1,249 @@
-# Prasyarat — Install Dulu Sebelum Deploy
+# Fedora MangoWM Setup - Daily Driver
 
-## Repositori
-| Repo | Cara Install |
-|---|---|
-| RPM Fusion | `sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm` |
-| Terra | `sudo dnf install dnf-utils && curl -fsSL https://terra.fyralabs.com/terra.repo | sudo tee /etc/yum.repos.d/terra.repo` |
-| TekkRPM | Tambah manual dari https://tekkrpm.fyralabs.com |
+Setup lengkap untuk Fedora Everything - Mirip Nobara OS, siap untuk kerja, gaming, multimedia.
 
-## Core Packages
-| Package | Cara Install |
-|---|---|
-| kernel-devel | `sudo dnf install kernel-devel` |
-| gcc, make, git, curl, wget, rsync, Xwayland | `sudo dnf install gcc make git curl wget rsync xorg-x11-server-Xwayland` |
-| dkms | `sudo dnf install dkms` |
+## 🚀 Install Fedora Dahulu
 
-## MangoWM & Desktop
-| Package | Cara Install |
-|---|---|
-| MangoWM | Dari repo / build manual |
-| Noctalia Shell | `qs -c noctalia-shell` (quickshell) |
-| qt5ct | `sudo dnf install qt5ct` |
-| qt6ct | `sudo dnf install qt6ct` |
-| grim | `sudo dnf install grim` |
-| slurp | `sudo dnf install slurp` |
-| xdg-desktop-portal-wlr | `sudo dnf install xdg-desktop-portal-wlr` |
-| mangohud | `sudo dnf install mangohud` |
-| goverlay | `sudo dnf install goverlay` |
-| foot | `sudo dnf install foot` |
-| google-noto-color-emoji-fonts | `sudo dnf install google-noto-color-emoji-fonts` |
-| SDDM | `sudo dnf install sddm` |
-| jq | `sudo dnf install jq` |
+### Step 1: Download Fedora Everything
+```bash
+# Download Fedora Everything ISO dari:
+# https://fedoraproject.org/server/download
 
-## Screen Toolkit (Noctalia Plugin)
-| Package | Install |
-|---|---|
-| Core | `sudo dnf install grim slurp hyprpicker wl-clipboard tesseract tesseract-langpack-eng ImageMagick zbar curl translate-shell ffmpeg jq wl-screenrec python3 python3-gobject xdg-desktop-portal` |
-| gifski | `cargo install gifski` |
+# Atau menggunakan Fedora Media Writer
+```
 
-## System Tools
-| Tool | Cara Install |
-|---|---|
-| fish | `sudo dnf install fish` |
-| kitty | `sudo dnf install kitty` |
-| neovim | `sudo dnf install neovim` |
-| fastfetch | `sudo dnf install fastfetch` |
-| btop | `sudo dnf install btop` |
-| eza | `sudo dnf install eza` |
-| pipx | `sudo dnf install pipx` |
-| python3-pip | `sudo dnf install python3-pip` |
-| bibata-cursor-theme | Cari di copr / manual download |
-| fzf | `sudo dnf install fzf` |
-| zoxide | `sudo dnf install zoxide` |
+### Step 2: Install Fedora (Minimal/Everything)
+- Pilih **Fedora Everything** (bukan Spin)
+- Pilih **Minimal** saat install (nanti kita install sendiri)
+- Partisi: root (btrfs), /home (btrfs), swap
+- Saat install, pilih:
+  - ✅ Add user to wheel group
+  - ✅ Enable network
+  - ❌ Jangan pilih Desktop Environment (kita install sendiri)
 
-## Apps
-| App | Cara Install |
-|---|---|
-| Nautilus (Files) | `sudo dnf install nautilus` |
-| Helium Browser | Dari repo / flatpak |
-| Pavucontrol | `sudo dnf install pavucontrol` |
-| Zed | Download dari https://zed.dev |
-| yazi | `sudo dnf install yazi` atau cargo |
-| opencode | https://opencode.ai |
-| claude | `npm install -g @anthropic-ai/claude-code` |
+### Step 3: Clone Repo Ini
+```bash
+cd ~
+git clone https://github.com/mindset/fedora-mydotfiles.git
+cd fedora-mydotfiles
+```
 
-## GTK Themes & Icons
-| Komponen | Value di settings.ini | Cara Install |
-|---|---|---|
-| gtk-theme-name | `adw-gtk3-dark` | `sudo dnf install adw-gtk3` |
-| gtk-icon-theme-name | `Tela-pink-dark` | Cari di copr / manual download |
-| gtk-cursor-theme-name | `Bibata-Modern-Ice` | Cari di copr / manual download |
+---
 
-## Catatan
-- Semua file di sini siap di-clone ke PC mana pun dan di-copy ke `~/.config/`
-- Warna GTK (`noctalia.css`) otomatis ngikut Noctalia — gak perlu setting manual
-- Warna Qt (`qt5ct/colors/noctalia.conf` & `qt6ct/colors/noctalia.conf`) otomatis ngikut Noctalia
-- Qt style pakai `Fusion` (built-in, gak perlu install tambahan)
-- Kalau ada tool yang belum diinstall, fallback ke default system
+## 📜 Penjelasan Semua Script
+
+### 1. `install.sh` - Script Utama
+Install semua kebutuhan dasar sampai masuk GUI:
+
+| Step | Fungsi |
+|------|---------|
+| `preflight_checks` | Cek OS, sudo, Secure Boot, conflicts |
+| `enable_multilib` | Enable 32-bit support (untuk wine/gaming) |
+| `configure_dnf` | Optimasi DNF (parallel downloads, fastestmirror) |
+| `add_repositories` | RPM Fusion + Terra + COPR (asusctl) |
+| `show_repo_status` | Tampilkan status semua repo |
+| `install_packages` | Core packages (driver, system tools, dev tools) |
+| `install_multimedia` | Codecs, FFmpeg, Mesa freeworld |
+| `install_nvidia` | NVIDIA driver (akmod) - optional |
+| `configure_firewalld` | Firewall + LocalSend port |
+| `configure_asusctl` | ASUS TUF fan, battery, keyboard |
+| `install_snapper` | BTRFS snapshots |
+| `install_mangowm` | MangoWM + Noctalia + SDDM (dari Terra repo) |
+| `copy_dotfiles` | Copy config ke ~/.config/ |
+| `install_zsh` | ZSH + oh-my-zsh + Powerlevel10k + plugins |
+| `cleanup` | Bersihkan cache |
+
+### 2. `apps.sh` - Aplikasi Dasar
+Install aplikasi daily yang diperlukan:
+- File manager: nautilus, nautilus-extensions
+- Media: mpv, imv, ImageMagick, ffmpeg
+- System: gnome-disk-utility, pavucontrol, gnome-software
+- Browser: Brave (dari official repo)
+- OCR: tesseract
+- MTP: libmtp, gvfs-mtp (baca HP Android)
+- Flatpak: ProtonPlus (gaming)
+
+### 3. `gaming.sh` - Gaming Stack
+Install kebutuhan gaming:
+- Gamemode
+- Gamescope
+- MangoHud
+- Wine + winetricks
+- VKBasalt
+- Steam
+- 32-bit Mesa (untuk game lama)
+
+### 4. `mirror.sh` - Mirror Switcher
+Auto-pilih mirror tercepat untuk Indonesia:
+```bash
+./mirror.sh          # Auto test & apply mirror tercepat
+./mirror.sh --test   # Test kecepatan saja
+./mirror.sh --revert # Kembali ke default Fedora
+```
+
+---
+
+## 📋 Urutan Install
+
+### Phase 1: Dasar (Sampai Masuk GUI)
+```bash
+cd fedora-mydotfiles
+chmod +x install.sh mirror.sh
+./mirror.sh          # Optional: gunakan mirror Indonesia
+./install.sh
+```
+
+**Pada saat install.sh berjalan:**
+1. Akan ditanya install NVIDIA? (Y/n)
+2. Akan ditanya install MangoWM + Noctalia? (Y/n)
+3. Setelah selesai → **REBOOT**
+
+**Setelah reboot:**
+- Pilih session: MangoWM
+- Login ke desktop
+
+### Phase 2: Aplikasi Dasar
+```bash
+chmod +x apps.sh
+./apps.sh
+```
+
+### Phase 3: Gaming (Optional)
+```bash
+chmod +x gaming.sh
+./gaming.sh
+```
+
+---
+
+## 📦 Yang Diinclude
+
+### Hardware Support
+| Hardware | Status |
+|----------|--------|
+| AMD iGPU (Vega) | ✅ |
+| NVIDIA RTX 3050 | ✅ (akmod) |
+| ASUS TUF (asusctl) | ✅ |
+| MTP Android | ✅ |
+| BTRFS Snapshots | ✅ |
+
+### Gaming
+| Component | Status |
+|-----------|--------|
+| NVIDIA Driver | ✅ |
+| Vulkan/Mesa | ✅ |
+| Gamemode | ✅ |
+| MangoHud | ✅ |
+| Gamescope | ✅ |
+| Wine + winetricks | ✅ |
+| Steam | ✅ |
+| 32-bit support | ✅ |
+
+### Work/Development
+| Component | Status |
+|-----------|--------|
+| ZSH + oh-my-zsh + P10k | ✅ |
+| Docker + Docker Compose | ✅ |
+| Neovim | ✅ |
+| Git | ✅ |
+| Python + Pipx | ✅ |
+| FZF | ✅ |
+| Eza + Bat | ✅ |
+| Starship prompt | ✅ |
+| Zoxide | ✅ |
+
+### Multimedia
+| Component | Status |
+|-----------|--------|
+| PipeWire | ✅ |
+| FFmpeg + Codecs | ✅ |
+| Mesa freeworld (AMD HW decode) | ✅ |
+
+### Desktop
+| Component | Status |
+|-----------|--------|
+| MangoWM | ✅ (Terra repo) |
+| Noctalia Shell | ✅ (Terra repo) |
+| SDDM | ✅ |
+| Qt5/Qt6 theming | ✅ |
+| GTK theming | ✅ |
+
+---
+
+## 🔧 Yang diInstall Manual
+
+Sesuai request - ini install manual потом:
+
+```bash
+# Discord
+flatpak install flathub com.discord.Discord
+
+# OBS Studio
+sudo dnf install obs-studio
+
+# Audacity
+sudo dnf install audacity
+
+# VS Code
+sudo dnf install code
+
+# Spotify
+flatpak install flathub com.spotify.Client
+
+# OBS Virtual Camera (optional)
+sudo dnf install obs-virtualsource
+```
+
+---
+
+## ⚠️ Catatan Penting
+
+1. **Secure Boot** - Disable di BIOS sebelum install NVIDIA
+2. **Multilib** - Sudah otomatis enable di install.sh
+3. **Terra Repo** - Wajib untuk MangoWM + Noctalia
+4. **NVIDIA on-demand** - Pakai `prime-run <app>` untuk gaming
+5. **Shell** - ZSH dengan Powerlevel10k (bukan fish)
+
+---
+
+## 🔄 Tips Maintenance
+
+### Update Sistem
+```bash
+sudo dnf update
+```
+
+### Lihat Snapshot
+```bash
+snapper list
+```
+
+### Rollback (jika ada masalah)
+```bash
+sudo snapper undochange <pre-number>..<post-number>
+```
+
+### Ganti Shell (jika perlu)
+```bash
+chsh -s /bin/zsh    # ZSH
+chsh -s /bin/fish   # Fish
+```
+
+---
+
+## 📝 Log Files
+
+Semua install dibuatkan log:
+- `install.sh` → `install.log`
+- `apps.sh` → `apps.log`
+- `gaming.sh` → `gaming.log`
+- `mirror.sh` → `mirror.log`
+
+---
+
+## 🙏 Credit
+
+- MangoWM: https://mangowm.github.io
+- Noctalia: https://docs.noctalia.dev
+- Terra Repo: https://terra.fyralabs.com
+- RPM Fusion: https://rpmfusion.org

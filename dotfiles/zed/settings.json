@@ -21,7 +21,6 @@
       "type": "registry"
     }
   },
-  "icon_theme": "Catppuccin Mocha",
   "title_bar": {
     "show_sign_in": false
   },
@@ -52,4 +51,5 @@
     "light": "One Light",
     "dark": "Noctalia Dark"
   },
+  "icon_theme": "Papirus Dark"
 }

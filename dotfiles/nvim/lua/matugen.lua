@@ -2,29 +2,25 @@ local M = {}
 
 function M.setup()
   require('base16-colorscheme').setup {
-    -- Background tones
-    base00 = '#171214', -- Default Background
-    base01 = '#231e20', -- Lighter Background (status bars)
-    base02 = '#2e282b', -- Selection Background
-    base03 = '#9c8d92', -- Comments, Invisibles
-    -- Foreground tones
-    base04 = '#d4c2c8', -- Dark Foreground (status bars)
-    base05 = '#ebe0e2', -- Default Foreground
-    base06 = '#ebe0e2', -- Light Foreground
-    base07 = '#ebe0e2', -- Lightest Foreground
-    -- Accent colors
-    base08 = '#ffb4ab', -- Variables, XML Tags, Errors
-    base09 = '#f3ba9b', -- Integers, Constants
-    base0A = '#dfbdcc', -- Classes, Search Background
-    base0B = '#ffafd7', -- Strings, Diff Inserted
-    base0C = '#f3ba9b', -- Regex, Escape Chars
-    base0D = '#ffafd7', -- Functions, Methods
-    base0E = '#dfbdcc', -- Keywords, Storage
-    base0F = '#93000a', -- Deprecated, Embedded Tags
+    base00 = '#0b0e14',
+    base01 = '#1e222a',
+    base02 = '#565b66',
+    base03 = '#8e959e',
+    base04 = '#8e959e',
+    base05 = '#d1d1c7',
+    base06 = '#d1d1c7',
+    base07 = '#d1d1c7',
+    base08 = '#d95757',
+    base09 = '#e6b450',
+    base0A = '#aad94c',
+    base0B = '#39bae6',
+    base0C = '#39bae6',
+    base0D = '#e6b450',
+    base0E = '#aad94c',
+    base0F = '#d95757',
   }
 end
 
--- Register a signal handler for SIGUSR1 (matugen updates)
 local signal = vim.uv.new_signal()
 signal:start(
   'sigusr1',

@@ -52,11 +52,15 @@ preflight_checks() {
 
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
-        if [[ "${ID:-}" != "fedora" ]]; then
+        local supported_fedora=false
+        case "${ID:-}" in
+            fedora|fedora-linux) supported_fedora=true ;;
+        esac
+        if [[ "$supported_fedora" == "false" ]]; then
             log_err "This script is designed for Fedora. Detected: ${ID:-unknown}"
             exit 1
         fi
-        log_ok "Detected Fedora ${VERSION_ID:-unknown}"
+        log_ok "Detected ${ID} ${VERSION_ID:-unknown}"
     else
         log_err "Cannot detect operating system."
         exit 1
@@ -106,12 +110,40 @@ preflight_checks() {
 }
 
 # ---------------------------------------------------
+enable_multilib() {
+    log_info "Enabling multilib repository (32-bit support)..."
+
+    if grep -q "^\[multilib\]" /etc/yum.repos.d/fedora.repo 2>/dev/null; then
+        log_ok "Multilib already enabled."
+        return 0
+    fi
+
+    if ! sudo dnf config-manager --set-enabled fedora-multilib 2>/dev/null; then
+        log_warn "config-manager failed, trying direct edit..."
+        sudo sed -i '/\[fedora\]/,/^\[/s/^enabled=1/enabled=1\ninclude=multilib/' /etc/yum.repos.d/fedora.repo 2>/dev/null || \
+        sudo tee -a /etc/yum.repos.d/fedora.repo >> /dev/null << 'MULTILIBEOF'
+
+[multilib]
+name=Fedora $releasever - $basearch - Multilib
+mirrorlist=https://mirrors.fedoraproject.org/metalink?repo=fedora-$releasever-multilib&arch=$basearch
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-FEDORA-$releasever-$basearch
+MULTILIBEOF
+    fi
+
+    sudo dnf makecache
+    log_ok "Multilib enabled."
+}
+
+# ---------------------------------------------------
 configure_dnf() {
     log_info "Configuring DNF..."
 
     if grep -q "^installonly_limit=3" /etc/dnf/dnf.conf 2>/dev/null && \
        grep -q "^max_parallel_downloads=15" /etc/dnf/dnf.conf 2>/dev/null && \
-       grep -q "^defaultyes=True" /etc/dnf/dnf.conf 2>/dev/null; then
+       grep -q "^defaultyes=True" /etc/dnf/dnf.conf 2>/dev/null && \
+       grep -q "^fastestmirror=True" /etc/dnf/dnf.conf 2>/dev/null; then
         log_ok "DNF already configured. Skipping."
         return 0
     fi
@@ -132,7 +164,8 @@ if not config.has_section("main"):
 updates = {
     "installonly_limit": "3",
     "max_parallel_downloads": "15",
-    "defaultyes": "True"
+    "defaultyes": "True",
+    "fastestmirror": "True"
 }
 
 for key, value in updates.items():
@@ -154,8 +187,14 @@ add_repositories() {
     else
         log_info "Installing RPM Fusion (free and non-free)..."
         sudo dnf install -y \
-            "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
-            "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
+            https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
+            https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || {
+            log_warn "Direct URL failed, trying mirrorlist..."
+            sudo dnf install -y dnf-plugins-core
+            sudo dnf install -y --repofrompath 'rpmfusion-free,https://mirrors.rpmfusion.org/free/fedora/$(rpm -E %fedora)/$(uname -m)/os/' \
+                             --repofrompath 'rpmfusion-nonfree,https://mirrors.rpmfusion.org/nonfree/fedora/$(rpm -E %fedora)/$(uname -m)/os/' \
+                             rpmfusion-free-release rpmfusion-nonfree-release
+        }
     fi
 
     if rpm -q terra-release &>/dev/null; then
@@ -164,37 +203,77 @@ add_repositories() {
         log_info "Installing Terra repository..."
         sudo dnf install --nogpgcheck \
             --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' \
-            terra-release -y
+            terra-release || log_warn "Terra repo failed — will use RPMFusion instead"
     fi
 
-    if [[ -f /etc/yum.repos.d/tekk.repo ]] || [[ -f /etc/yum.repos.d/tekk-fedora-43.repo ]]; then
-        log_ok "TekkRPM repository already configured. Skipping."
-    else
-        local fedora_ver
-        fedora_ver="$(rpm -E %fedora)"
-        log_info "Adding TekkRPM repository (Fedora ${fedora_ver})..."
-        if ! sudo dnf config-manager addrepo \
-            --from-repofile="https://forgejo.jtekk.dev/api/packages/TekkRPM/rpm/tekk-fedora-${fedora_ver}.repo" -y 2>/dev/null; then
-            log_warn "dnf config-manager failed, falling back to curl..."
-            sudo curl -fL -o /etc/yum.repos.d/tekk.repo \
-                "https://forgejo.jtekk.dev/api/packages/TekkRPM/rpm/tekk-fedora-${fedora_ver}.repo"
-        fi
+    if rpm -q terra-release &>/dev/null; then
+        log_info "Installing Terra multimedia repository..."
+        sudo dnf install -y terra-release-multimedia 2>/dev/null || \
+            log_warn "Terra multimedia unavailable — will use RPMFusion swap instead"
     fi
 
     # ASUS Linux repository (asusctl — fan, battery, keyboard)
+    # Backup: kalau COPR gagal, download manual dari URL lain
     if [[ -f /etc/yum.repos.d/asus-linux.repo ]]; then
         log_ok "ASUS Linux repository already configured. Skipping."
     else
         log_info "Adding ASUS Linux repository (asusctl)..."
-        sudo dnf copr enable lukenukem/asus-linux -y || \
-            sudo curl -fL -o /etc/yum.repos.d/asus-linux.repo \
-                "https://copr.fedorainfracloud.org/coprs/lukenukem/asus-linux/repo/fedora-$(rpm -E %fedora)/lukenukem-asus-linux-fedora-$(rpm -E %fedora).repo"
+        local asus_repo_url="https://copr.fedorainfracloud.org/coprs/lukenukem/asus-linux/repo/fedora-$(rpm -E %fedora)/lukenukem-asus-linux-fedora-$(rpm -E %fedora).repo"
+        
+        if ! sudo dnf copr enable lukenukem/asus-linux -y 2>/dev/null; then
+            log_warn "COPR enable failed — trying direct download..."
+            if ! sudo curl -fL -o /etc/yum.repos.d/asus-linux.repo "$asus_repo_url" 2>/dev/null; then
+                log_warn "ASUS repo unavailable — asusctl will be skipped."
+                log_warn "Manual install later: sudo dnf copr enable lukenukem/asus-linux"
+            fi
+        fi
     fi
 
     log_info "Refreshing package cache..."
     sudo dnf makecache
 
     log_ok "Repositories added."
+}
+
+# ---------------------------------------------------
+show_repo_status() {
+    log_info "========================================="
+    log_info "  Repository Status Summary"
+    log_info "========================================="
+
+    echo ""
+    log_info "Official Fedora:"
+    rpm -q fedora-repos && log_ok "  fedora-repos" || log_warn "  fedora-repos: not installed"
+
+    echo ""
+    log_info "RPM Fusion:"
+    rpm -q rpmfusion-free-release && log_ok "  RPM Fusion Free" || log_warn "  RPM Fusion Free: not installed"
+    rpm -q rpmfusion-nonfree-release && log_ok "  RPM Fusion Non-Free" || log_warn "  RPM Fusion Non-Free: not installed"
+
+    echo ""
+    log_info "Terra (FyraLabs):"
+    rpm -q terra-release && log_ok "  Terra" || log_warn "  Terra: not installed"
+    rpm -q terra-release-multimedia && log_ok "  Terra Multimedia" || log_warn "  Terra Multimedia: not installed"
+
+    echo ""
+    log_info "COPR Repositories:"
+    if [[ -d /etc/copr.d ]]; then
+        for copr in /etc/copr.d/*; do
+            [[ -f "$copr" ]] && log_ok "  $(basename "$copr")"
+        done
+    else
+        log_warn "  No COPR repos configured"
+    fi
+
+    echo ""
+    log_info "Flatpak:"
+    command -v flatpak &>/dev/null && log_ok "  Flatpak installed" || log_warn "  Flatpak: not installed"
+    flatpak remote-list --system 2>/dev/null | grep -q flathub && log_ok "  Flathub configured" || log_warn "  Flathub: not configured"
+
+    echo ""
+    log_ok "========================================="
+    log_info "  All repos detected successfully"
+    log_info "========================================="
 }
 
 # ---------------------------------------------------
@@ -207,12 +286,15 @@ install_packages() {
         kernel-devel kernel-headers \
         gcc make acpid \
         libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig \
-        git curl wget rsync xorg-x11-server-Xwayland Xwayland
+        git curl wget rsync xorg-x11-server-Xwayland
 
     # AMD firmware — explicit untuk laptop hybrid, biasanya sudah ada
     # tapi lebih aman disebut eksplisit di installer semi-custom
-    sudo dnf install -y \
-        linux-firmware amd-gpu-firmware
+    sudo dnf install -y linux-firmware || log_warn "linux-firmware install failed"
+    # amd-gpu-firmware deprecated di Fedora 40+, menggunakan linux-firmware saja
+    if ! sudo dnf install -y amd-gpu-firmware 2>/dev/null; then
+        log_info "amd-gpu-firmware not available (normal di Fedora 40+), using linux-firmware"
+    fi
 
     # Vulkan stack lengkap + mesa untuk hybrid AMD + NVIDIA
     sudo dnf install -y \
@@ -223,19 +305,34 @@ install_packages() {
         vulkan-tools \
         vulkan-validation-layers
 
-    # PipeWire tools — gaming + Wayland audio
+    # PipeWire tools + compat layers — audio lengkap
     sudo dnf install -y \
         pipewire-utils \
+        pipewire-alsa \
+        pipewire-pulseaudio \
+        pipewire-jack \
         wireplumber \
-        playerctl
+        playerctl \
+        pamixer
+
+    # Hardware video acceleration tools
+    sudo dnf install -y \
+        libva-utils \
+        vdpauinfo
+
+    # Wayland compat — Qt5 dan Qt6 app bisa jalan di Wayland
+    sudo dnf install -y \
+        qt5-qtwayland \
+        qt6-qtwayland
 
     # System tools
     # bat diinstall eksplisit — dipakai alias di config.fish
     sudo dnf install -y \
-        eza python3-pip pipx fastfetch fish kitty mokutil flatpak \
-        neovim starship bat \
-        snapper libdnf5-plugin-actions fzf zoxide \
-        bibata-cursor-theme btop
+        eza python3-pip pipx fastfetch zsh kitty mokutil flatpak git \
+        neovim starship bat fzf \
+        snapper zoxide \
+        bibata-cursor-theme btop \
+        docker docker-compose
 
     # ASUS TUF laptop tools — fan profile, battery limit, keyboard
     # supergfxctl TIDAK diinstall — proyek mati
@@ -250,31 +347,41 @@ install_packages() {
 install_multimedia() {
     log_info "Installing multimedia codecs..."
 
+    # RPMFusion tainted — libdvdcss dll
     if ! rpm -q rpmfusion-free-release-tainted &>/dev/null; then
         sudo dnf install -y rpmfusion-free-release-tainted
     fi
-
     if ! rpm -q libdvdcss &>/dev/null; then
         sudo dnf install -y libdvdcss
     fi
 
+    # Swap ffmpeg-free ke ffmpeg penuh (H.264/H.265/AAC support)
+    # libavcodec-freeworld sudah tidak ada di Fedora 44+
+    log_info "Swapping ffmpeg-free to full ffmpeg (RPMFusion)..."
+    sudo dnf swap ffmpeg-free ffmpeg --allowerasing -y || \
+        log_warn "ffmpeg swap gagal — mungkin sudah full ffmpeg atau conflict"
+
+    # x264 x265 encoder
+    sudo dnf install -y x264 x265
+
+    # Update multimedia group dengan gstreamer components
     log_info "Installing multimedia and sound-and-video groups..."
     sudo dnf group install -y multimedia sound-and-video || \
         log_warn "Group install gagal — jalanin manual: sudo dnf group install multimedia sound-and-video"
+    sudo dnf update @multimedia -y --setopt="install_weak_deps=False" \
+        --exclude=PackageKit-gstreamer-plugin || true
+
+    # Mesa freeworld — AMD hardware decode H.264/H.265
+    # Laptop kamu punya AMD iGPU, ini penting untuk video decode
+    log_info "Installing mesa freeworld drivers (AMD hardware decode)..."
+    sudo dnf swap mesa-va-drivers mesa-va-drivers-freeworld --allowerasing -y || \
+        log_warn "mesa-va-drivers swap gagal"
+    sudo dnf install -y \
+        mesa-va-drivers-freeworld.i686 \
+        mesa-vdpau-drivers-freeworld || \
+        log_warn "mesa freeworld i686 gagal — skip"
 
     log_ok "Multimedia codecs installed."
-}
-
-# ---------------------------------------------------
-install_zed() {
-    if command -v zed &>/dev/null || [[ -x ~/.local/bin/zed ]]; then
-        log_ok "Zed already installed. Skipping."
-        return 0
-    fi
-
-    log_info "Installing Zed editor..."
-    curl -f https://zed.dev/install.sh | sh
-    log_ok "Zed installed to ~/.local/bin/zed"
 }
 
 # ---------------------------------------------------
@@ -308,7 +415,10 @@ install_nvidia() {
     sudo dnf install -y \
         egl-wayland \
         libva-nvidia-driver \
-        nvidia-vaapi-driver
+        nvidia-vaapi-driver || {
+        log_warn "Some NVIDIA Wayland packages failed — checking alternatives..."
+        sudo dnf install -y egl-wayland || true
+    }
 
     log_info "Building kernel module — tunggu hingga selesai, jangan reboot dulu..."
     sudo akmods --force
@@ -486,20 +596,11 @@ install_snapper() {
         TIMELINE_LIMIT_YEARLY=0
 
     # DNF5 action plugin — auto snapshot pre/post transaction
-    # python3-dnf-plugin-snapper rusak di Fedora 41+ (dnf5)
-    local actions_dir="/etc/dnf/libdnf5-plugins/actions.d"
-    if [[ ! -f "${actions_dir}/snapper.actions" ]]; then
-        sudo mkdir -p "$actions_dir"
-        sudo tee "${actions_dir}/snapper.actions" > /dev/null << 'SNAPPERACT'
-# Auto snapshot pre/post setiap transaksi DNF5
-# Dibuat oleh install.sh — hapus file ini kalau ingin nonaktifkan
-pre_transaction::::/usr/bin/sh -c echo\ "tmp.snapper_pre_number=$(snapper\ create\ -t\ pre\ -p\ -d\ '${tmp.cmd}')"
-post_transaction::::/usr/bin/sh -c [\ -n\ "${tmp.snapper_pre_number}"\ ]\ &&\ snapper\ create\ -t\ post\ --pre-number\ "${tmp.snapper_pre_number}"\ -d\ "${tmp.cmd}"
-SNAPPERACT
-        log_ok "DNF5 action plugin configured: ${actions_dir}/snapper.actions"
-    else
-        log_ok "DNF5 action plugin already exists. Skipping."
-    fi
+    # Skip di Fedora 41+ — python3-dnf-plugin-snapper rusak dan tidak ada replacement stable
+    # Aktifkan manual nanti kalau sudah fixed, atau gunakan external script
+    log_warn "DNF5 snapper plugin: skipped (not stable in Fedora 41+)"
+    log_info "Alternative: use 'dnf system-upgrade reboot' with automatic snapshots"
+    log_info "Or manually create: /etc/dnf/libdnf5-plugins/actions.d/snapper.actions"
 
     sudo systemctl enable --now snapper-timeline.timer
     sudo systemctl enable --now snapper-cleanup.timer
@@ -516,123 +617,74 @@ SNAPPERACT
 }
 
 # ---------------------------------------------------
-install_apps() {
-    read -rp "Install applications (Discord, Steam, dll)? [Y/n]: " response
-    case "$response" in
-        [Nn]*)
-            log_warn "Skipping application installation."
-            return 0
-            ;;
-    esac
-
-    log_info "Installing applications..."
-
-    # obs-studio  -> install manual nanti
-    # gnome-software -> tidak diperlukan
-    sudo dnf install -y \
-        nautilus nautilus-python zed yazi mpv imv dnfdragora \
-        gnome-disk-utility pavucontrol \
-        helium-browser telegram-desktop \
-        wl-clipboard hyprpicker tesseract tesseract-langpack-eng \
-        ImageMagick zbar translate-shell ffmpeg \
-        wl-screenrec python3-gobject xdg-desktop-portal
-
-    if command -v cargo &>/dev/null; then
-        cargo install gifski 2>/dev/null || log_warn "gifski install skipped (cargo not available)"
-    else
-        log_warn "gifski tidak diinstall — butuh Rust: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
-    fi
-
-    # Flathub + LocalSend
-    if command -v flatpak &>/dev/null; then
-        if ! flatpak remote-list --system 2>/dev/null | grep -q flathub; then
-            log_info "Adding Flathub repository..."
-            sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-            log_ok "Flathub added."
-        else
-            log_ok "Flathub already configured."
-        fi
-
-        if ! flatpak list --system 2>/dev/null | grep -q org.localsend.localsend_app; then
-            log_info "Installing LocalSend..."
-            flatpak install -y flathub org.localsend.localsend_app || log_warn "LocalSend install gagal"
-            log_ok "LocalSend installed."
-        else
-            log_ok "LocalSend already installed."
-        fi
-
-        if ! flatpak list --system 2>/dev/null | grep -q com.vysp3r.ProtonPlus; then
-            log_info "Installing ProtonPlus (GE-Proton manager)..."
-            flatpak install -y flathub com.vysp3r.ProtonPlus || log_warn "ProtonPlus install gagal"
-            log_ok "ProtonPlus installed."
-        else
-            log_ok "ProtonPlus already installed."
-        fi
-    else
-        log_warn "flatpak not found — skip flatpak apps (LocalSend, ProtonPlus)"
-    fi
-
-    # Nautilus LocalSend extension
-    local nautilus_ext_dir="${HOME}/.local/share/nautilus-python/extensions"
-    local nautilus_ext="${nautilus_ext_dir}/localsend.py"
-    if [[ ! -f "$nautilus_ext" ]]; then
-        mkdir -p "$nautilus_ext_dir"
-        curl -fL -o "$nautilus_ext" \
-            "https://raw.githubusercontent.com/basecamp/omarchy/dev/default/nautilus-python/extensions/localsend.py"
-        log_ok "Nautilus LocalSend extension installed."
-    else
-        log_ok "Nautilus LocalSend extension already exists."
-    fi
-
-    log_ok "Applications installed."
-}
-
-# ---------------------------------------------------
-install_gaming() {
-    read -rp "Install gaming packages (gamemode, gamescope, wine, winetricks, vkbasalt)? [Y/n]: " response
-    case "$response" in
-        [Nn]*)
-            log_warn "Skipping gaming packages."
-            return 0
-            ;;
-    esac
-
-    log_info "Installing gaming packages..."
-    sudo dnf install -y \
-        gamemode lib32-gamemode gamescope \
-        wine winetricks vkbasalt
-    log_ok "Gaming packages installed."
-}
-
-# ---------------------------------------------------
 install_mangowm() {
+    # Check if Terra repo is available
+    if ! rpm -q terra-release &>/dev/null; then
+        log_warn "Terra repo not found — cannot install MangoWM/Noctalia"
+        log_warn "Please add Terra repo first: sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra\$releasever' terra-release"
+        read -rp "Install only SDDM (without MangoWM/Noctalia)? [Y/n]: " response
+        case "$response" in
+            [Nn]*) return 0 ;;
+        esac
+        install_sddm
+        return 0
+    fi
+
+    # Check if already installed
     if rpm -q mangowm &>/dev/null; then
         log_ok "MangoWM already installed. Skipping."
         install_sddm
         return 0
     fi
 
-    read -rp "Install MangoWM? [Y/n]: " response
+    read -rp "Install MangoWM + Noctalia from Terra? [Y/n]: " response
     case "$response" in
         [Nn]*)
-            log_warn "Skipping MangoWM installation."
+            log_warn "Skipping MangoWM/Noctalia installation."
+            install_sddm
             return 0
             ;;
     esac
 
-    log_info "Installing MangoWM and desktop packages..."
+    log_info "Installing MangoWM and Noctalia from Terra repo..."
 
+    # Core WM packages from Terra
     sudo dnf install -y \
-        mangowm noctalia-shell \
-        qt5ct qt6ct grim slurp \
-        xdg-desktop-portal-wlr xdg-desktop-portal-gtk \
-        mangohud goverlay foot \
-        google-noto-color-emoji-fonts jq
+        mangowm \
+        noctalia-shell \
+        noctalia-qs
 
+    # Required dependencies for MangoWM/Noctalia (Fedora packages)
+    sudo dnf install -y \
+        qt5ct qt6ct \
+        grim slurp \
+        brightnessctl \
+        cliphist \
+        wlsunset \
+        imagemagick \
+        xdg-desktop-portal-wlr xdg-desktop-portal-gtk \
+        google-noto-color-emoji-fonts \
+        jq python3
+
+    # Wayland core packages (usually included, but ensure explicitly)
+    sudo dnf install -y \
+        wayland \
+        wayland-protocols \
+        libinput \
+        libxkbcommon \
+        seatd \
+        libdisplay-info || true
+
+    # NVIDIA/AMD graphics packages (ensure Xorg drivers)
+    sudo dnf install -y \
+        xorg-x11-drv-amdgpu \
+        xorg-x11-drv-nvidia-cuda || true
+
+    # SDDM
     sudo dnf install -y \
         sddm qt6-qtdeclarative qt6-qtsvg qt6-qtquickcontrols2
 
-    log_ok "MangoWM desktop packages installed."
+    log_ok "MangoWM + Noctalia installed from Terra."
 
     install_sddm
 }
@@ -647,23 +699,35 @@ install_sddm() {
 
     sudo mkdir -p /etc/sddm.conf.d
 
-    # X11 greeter — lebih stabil dari Wayland greeter saat ini
-    # Session MangoWM tetap Wayland, hanya greeter-nya X11
-    # Tanpa autologin, tanpa custom theme
-    # Cek apakah breeze theme tersedia — lebih safe dari Current= kosong
-    local sddm_theme=""
-    if [[ -d "/usr/share/sddm/themes/breeze" ]]; then
-        sddm_theme="breeze"
-    else
-        sudo dnf install -y sddm-breeze 2>/dev/null && sddm_theme="breeze" || sddm_theme=""
-    fi
+    # Get current username
+    local current_user="$USER"
 
-    sudo tee /etc/sddm.conf.d/00-default.conf > /dev/null << SDDMEOF
+    # SDDM Config:
+    # - Auto-login (no need to enter password)
+    # - Wayland enable (cursor works properly)
+    # - Default session: MangoWM
+    # - NO KDE/GNOME themes - just system default
+    sudo tee /etc/sddm.conf.d/10-mango.conf > /dev/null << SDDMEOF
+[Autologin]
+User=$current_user
+Session=mango.desktop
+Relogin=true
+
+[General]
+InputMethod=none
+Numlock=on
+
 [Theme]
-Current=${sddm_theme}
+Current=
+
+[Wayland]
+Enable=true
+
+[X11]
+Enable=false
 SDDMEOF
 
-    log_ok "SDDM config applied (X11 greeter, theme=${sddm_theme:-default}, no autologin)."
+    log_ok "SDDM configured with auto-login for user: $current_user"
 
     if systemctl is-enabled sddm.service &>/dev/null 2>&1; then
         log_ok "SDDM service already enabled."
@@ -683,7 +747,10 @@ SDDMEOF
         fi
     done
 
-    log_ok "SDDM configured."
+    log_ok "SDDM complete."
+    log_info "  - Auto-login: YES (langsung masuk)"
+    log_info "  - Session: MangoWM"
+    log_info "  - Cursor: works (Wayland enabled)"
 }
 
 # ---------------------------------------------------
@@ -712,8 +779,9 @@ copy_dotfiles() {
     mkdir -p ~/.config
 
     local dirs=(
-        fastfetch fish gtk-3.0 gtk-4.0 kitty mango
-        nvim qt5ct qt6ct yazi zed
+        fastfetch gtk-3.0 gtk-4.0 kitty mango
+        nvim qt5ct qt6ct yazi zed noctalia
+        nautilus
     )
 
     local backup_dir="${HOME}/.config-backup-$(date +%Y%m%d%H%M%S)"
@@ -841,6 +909,155 @@ FISHEOF
 }
 
 # ---------------------------------------------------
+install_zsh() {
+    log_info "Setting up ZSH with Powerlevel10k..."
+
+    if ! command -v zsh &>/dev/null; then
+        log_warn "ZSH not installed. Skipping."
+        return 0
+    fi
+
+    local zshrc="$HOME/.zshrc"
+    local p10k_theme="$HOME/.oh-my-zsh/themes/powerlevel10k.zsh-theme"
+
+    # Install oh-my-zsh if not exists
+    if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+        log_info "Installing oh-my-zsh..."
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended || {
+            log_warn "oh-my-zsh install failed - manual install"
+            return 0
+        }
+    else
+        log_ok "oh-my-zsh already installed."
+    fi
+
+    # Install Powerlevel10k theme
+    if [[ ! -f "$p10k_theme" ]]; then
+        log_info "Installing Powerlevel10k theme..."
+        curl -fL -o "$p10k_theme" \
+            https://github.com/romkatv/powerlevel10k/raw/master/powerlevel10k.zsh-theme 2>/dev/null || \
+            log_warn "Powerlevel10k download failed"
+    else
+        log_ok "Powerlevel10k already installed."
+    fi
+
+    # Install plugins
+    local zsh_custom="$HOME/.oh-my-zsh/custom"
+
+    # zsh-autosuggestions (like fish auto-suggestions)
+    if [[ ! -d "$zsh_custom/plugins/zsh-autosuggestions" ]]; then
+        git clone https://github.com/zsh-users/zsh-autosuggestions "$zsh_custom/plugins/zsh-autosuggestions" 2>/dev/null || \
+            log_warn "zsh-autosuggestions failed"
+    fi
+
+    # zsh-syntax-highlighting (like fish syntax highlighting)
+    if [[ ! -d "$zsh_custom/plugins/zsh-syntax-highlighting" ]]; then
+        git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$zsh_custom/plugins/zsh-syntax-highlighting" 2>/dev/null || \
+            log_warn "zsh-syntax-highlighting failed"
+    fi
+
+    # fzf - interactive fuzzy finder (for history, files, etc)
+    if [[ ! -d "$zsh_custom/plugins/fzf" ]]; then
+        git clone --depth 1 https://github.com/junegunn/fzf-git.sh "$zsh_custom/plugins/fzf" 2>/dev/null || \
+            log_warn "fzf plugin failed"
+    fi
+
+    # zsh-navigation-tools (like fish navigation)
+    if [[ ! -d "$zsh_custom/plugins/zsh-navigation-tools" ]]; then
+        git clone https://github.com/zsh-users/zsh-navigation-tools "$zsh_custom/plugins/zsh-navigation-tools" 2>/dev/null || \
+            log_warn "zsh-navigation-tools failed"
+    fi
+
+    # Configure zshrc
+    # Backup existing
+    if [[ -f "$zshrc" ]]; then
+        cp "$zshrc" "${zshrc}.bak.$(date +%Y%m%d)"
+    fi
+
+    # Create new zshrc
+    cat > "$zshrc" << 'ZSHEOF'
+# Enable Powerlevel10k theme
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# Enable plugins
+plugins=(
+    git
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+    fzf
+    zsh-navigation-tools
+)
+
+# Eza aliases (like fish)
+alias ls='eza --icons'
+alias ll='eza -lah --icons'
+alias la='eza -a --icons'
+alias lt='eza --tree --icons'
+alias cat='bat --style=plain'
+
+# Navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias ....='cd ../../..'
+
+# Apps aliases (from fish config)
+alias op='opencode'
+alias cc='claude'
+alias y='yazi'
+alias nv='nvim'
+
+# Docker shortcuts
+alias d='docker'
+alias dc='docker compose'
+alias dps='docker ps'
+alias dpa='docker ps -a'
+alias di='docker images'
+alias dex='docker exec -it'
+alias dlog='docker logs -f'
+
+# System
+alias update='sudo dnf update'
+alias upgrade='sudo dnf upgrade'
+alias clean='sudo dnf autoremove && sudo dnf clean all'
+
+# NVIDIA: prime-run <app>
+# Steam: prime-run %command%
+
+# FZF - interactive search (Ctrl+R for history, Ctrl+T for files)
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+export FZF_CTRL_R_OPTS='--height 40% --layout=reverse --border'
+export FZF_CTRL_T_OPTS='--height 40% --layout=reverse --border'
+
+# zoxide (smart cd)
+if command -v zoxide &>/dev/null; then
+    eval "$(zoxide init zsh)"
+fi
+ZSHEOF
+
+    log_ok "ZSH configured with Powerlevel10k + plugins:"
+    log_info "  - Powerlevel10k theme"
+    log_info "  - zsh-autosuggestions (auto-complete)"
+    log_info "  - zsh-syntax-highlighting (syntax highlight)"
+    log_info "  - fzf (interactive search: Ctrl+R history, Ctrl+T files)"
+    log_info "  - zsh-navigation-tools (Ctrl+P history, n-list)"
+    log_info "  - zoxide (smart cd)"
+    log_info "  - Docker/Docker Compose shortcuts"
+    log_info "  - Eza aliases (ls, ll, tree, etc)"
+
+    # Set as default shell
+    read -rp "Set ZSH as default shell? [Y/n]: " response
+    case "$response" in
+        [Nn]*) log_info "ZSH not set as default. Manual: chsh -s /bin/zsh"; return 0 ;;
+    esac
+
+    sudo chsh -s /bin/zsh "$USER" || log_warn "chsh failed - manual: sudo chsh -s /bin/zsh $USER"
+    log_ok "ZSH set as default shell."
+
+    log_info "After login, run: p10k configure"
+}
+
+# ---------------------------------------------------
 cleanup() {
     log_info "Cleaning up..."
     sudo dnf autoremove -y
@@ -851,23 +1068,24 @@ cleanup() {
 # ---------------------------------------------------
 main() {
     preflight_checks
+    enable_multilib      # Enable 32-bit support BEFORE installing packages
     configure_dnf
     add_repositories
+    show_repo_status     # Show all detected repos
     install_packages
     install_multimedia
-    install_zed
     install_nvidia          # include setup_prime_run
     configure_firewalld
     configure_asusctl
     install_snapper
-    install_apps
-    install_gaming
     install_mangowm         # include install_sddm
+    # Apps & gaming: jalankan apps.sh dan gaming.sh setelah masuk desktop
     install_tela_icon_theme
     copy_dotfiles
     copy_wallpapers
-    set_shell
-    configure_fish          # append zoxide/starship kalau dotfiles sudah ada config.fish
+    # set_shell              # Removed - handled by install_zsh
+    # configure_fish        # Removed - using zsh instead
+    install_zsh          # ZSH with oh-my-zsh + plugins
     cleanup
 
     echo ""
