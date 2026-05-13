@@ -744,16 +744,12 @@ install_sddm() {
         # - Auto-login (no need to enter password)
         # - Wayland enable (cursor works properly)
         # - Default session: MangoWM
-        # - NO KDE/GNOME themes - just system default
+        # - Username pre-filled, user input password
         sudo tee /etc/sddm.conf.d/10-mango.conf > /dev/null << SDDMEOF
-[Autologin]
-User=$current_user
-Session=mango.desktop
-Relogin=true
-
 [General]
 InputMethod=none
 Numlock=on
+DefaultUser=$current_user
 
 [Theme]
 Current=
@@ -764,7 +760,7 @@ Enable=true
 [X11]
 Enable=false
 SDDMEOF
-        log_ok "SDDM configured with auto-login for user: $current_user"
+        log_ok "SDDM configured - username: $current_user, password required"
     fi
 
     if systemctl is-enabled sddm.service &>/dev/null 2>&1; then
