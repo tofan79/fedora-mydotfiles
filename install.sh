@@ -1058,6 +1058,37 @@ ZSHEOF
 }
 
 # ---------------------------------------------------
+create_user_folders() {
+    log_info "Creating standard user folders..."
+
+    # Install xdg-user-dirs if not exists
+    sudo dnf install -y xdg-user-dirs 2>/dev/null || true
+
+    # Update/create standard folders
+    xdg-user-dirs-update 2>/dev/null || {
+        # Manual create if xdg-user-dirs fails
+        local folders=(
+            "$HOME/Downloads"
+            "$HOME/Documents"
+            "$HOME/Pictures"
+            "$HOME/Music"
+            "$HOME/Videos"
+            "$HOME/Desktop"
+        )
+
+        for folder in "${folders[@]}"; do
+            if [[ ! -d "$folder" ]]; then
+                mkdir -p "$folder"
+                log_ok "Created: $folder"
+            fi
+        done
+    }
+
+    log_ok "User folders created/updated."
+    log_info "  Downloads, Documents, Pictures, Music, Videos, Desktop"
+}
+
+# ---------------------------------------------------
 cleanup() {
     log_info "Cleaning up..."
     sudo dnf autoremove -y
@@ -1086,6 +1117,7 @@ main() {
     # set_shell              # Removed - handled by install_zsh
     # configure_fish        # Removed - using zsh instead
     install_zsh          # ZSH with oh-my-zsh + plugins
+    create_user_folders
     cleanup
 
     echo ""
