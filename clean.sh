@@ -27,8 +27,10 @@ rm -rf ~/.local/share/Trash/* 2>/dev/null && echo "  ✔ Trash cleaned"
 echo -e "\n[6/8] Browser cache..."
 rm -rf ~/.cache/brave-browser/* 2>/dev/null && echo "  ✔ Brave cache cleaned"
 
-echo -e "\n[7/8] History + Thumbnails..."
+echo -e "\n[7/8] History + ZSH cache + npm..."
 > ~/.bash_history 2>/dev/null && echo "  ✔ bash history cleared"
+rm -f ~/.zcompdump* 2>/dev/null && echo "  ✔ ZSH compdump cache cleared"
+rm -rf ~/.npm/* 2>/dev/null && echo "  ✔ npm cache cleared"
 rm -rf ~/.cache/thumbnails/* 2>/dev/null && echo "  ✔ Thumbnail cache cleaned"
 
 echo -e "\n[8/8] Flatpak unused runtimes..."
