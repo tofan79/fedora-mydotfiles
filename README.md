@@ -21,8 +21,8 @@ Setup lengkap untuk Fedora Everything - Mirip Nobara OS, siap untuk kerja, gamin
   - ✅ **Development Tools** (gcc, make, dll — biar gak install manual)
   - ❌ Jangan centang Desktop Environment (kita install sendiri)
 - User settings:
-  - Tambah user ke wheel group manual nanti: `sudo usermod -aG wheel $USER`
-  - Enable network manual nanti
+  - ✅ Add user to wheel group
+  - ✅ Enable network
 
 ### Step 3: Clone Repo Ini
 ```bash
