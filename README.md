@@ -12,14 +12,17 @@ Setup lengkap untuk Fedora Everything - Mirip Nobara OS, siap untuk kerja, gamin
 # Atau menggunakan Fedora Media Writer
 ```
 
-### Step 2: Install Fedora (Minimal/Everything)
+### Step 2: Install Fedora (Everything)
 - Pilih **Fedora Everything** (bukan Spin)
-- Pilih **Minimal** saat install (nanti kita install sendiri)
+- Pilih **Minimal** atau **Standard** — pilih **Standard** biar ada basic tools
 - Partisi: root (btrfs), /home (btrfs), swap
-- Saat install, pilih:
+- Saat install, Software Selection:
+  - ✅ **Standard Package** (basic tools)
+  - ✅ **Development Tools** (gcc, make, dll — biar gak install manual)
+  - ❌ Jangan centang Desktop Environment (kita install sendiri)
+- User settings:
   - ✅ Add user to wheel group
   - ✅ Enable network
-  - ❌ Jangan pilih Desktop Environment (kita install sendiri)
 
 ### Step 3: Clone Repo Ini
 ```bash
