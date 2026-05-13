@@ -24,7 +24,7 @@ Setup lengkap untuk Fedora Everything - Mirip Nobara OS, siap untuk kerja, gamin
 ### Step 3: Clone Repo Ini
 ```bash
 cd ~
-git clone https://github.com/mindset/fedora-mydotfiles.git
+git clone https://github.com/tofan79/fedora-mydotfiles.git
 cd fedora-mydotfiles
 ```
 
@@ -73,13 +73,9 @@ Install kebutuhan gaming:
 - Steam
 - 32-bit Mesa (untuk game lama)
 
-### 4. `mirror.sh` - Mirror Switcher
-Auto-pilih mirror tercepat untuk Indonesia:
-```bash
-./mirror.sh          # Auto test & apply mirror tercepat
-./mirror.sh --test   # Test kecepatan saja
-./mirror.sh --revert # Kembali ke default Fedora
-```
+### 4. Mirror Selection (udah terintegrasi di install.sh)
+Script otomatis pilih mirror terbaik:
+- Singapore → Japan → Jakarta → Other
 
 ---
 
@@ -88,9 +84,8 @@ Auto-pilih mirror tercepat untuk Indonesia:
 ### Phase 1: Dasar (Sampai Masuk GUI)
 ```bash
 cd fedora-mydotfiles
-chmod +x install.sh mirror.sh
-./mirror.sh          # Optional: gunakan mirror Indonesia
-./install.sh
+chmod +x install.sh
+./install.sh          # Mirror auto-pilih di dalam script
 ```
 
 **Pada saat install.sh berjalan:**
@@ -237,7 +232,6 @@ Semua install dibuatkan log:
 - `install.sh` → `install.log`
 - `apps.sh` → `apps.log`
 - `gaming.sh` → `gaming.log`
-- `mirror.sh` → `mirror.log`
 
 ---
 
