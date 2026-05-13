@@ -55,15 +55,26 @@ Install semua kebutuhan dasar sampai masuk GUI:
 
 ### 2. `apps.sh` - Aplikasi Dasar
 Install aplikasi daily yang diperlukan:
-- File manager: nautilus, nautilus-extensions
+- File manager: nautilus, yazi
 - Media: mpv, imv, ImageMagick, ffmpeg
-- System: gnome-disk-utility, pavucontrol, gnome-software
-- Browser: Brave (dari official repo)
+- System: gnome-disk-utility, pavucontrol
+- Browser: Brave (dari official repo, otomatis add repo)
 - OCR: tesseract
 - MTP: libmtp, gvfs-mtp (baca HP Android)
-- Flatpak: ProtonPlus (gaming)
+- Flatpak + Flathub (system-wide)
+- Desktop fix: btop, nvim, yazi (wrapper kitty biar buka dari launcher)
 
-### 3. `gaming.sh` - Gaming Stack
+### 3. `clean.sh` - System Cleanup (di ~/.config/clean.sh)
+```bash
+alias fcclean='~/.config/clean.sh'
+```
+- DNF cache + orphans
+- mise / JetBrains cache
+- /tmp, /var/tmp, journal logs
+- Trash, browser cache, thumbnails
+- Flatpak unused runtimes
+
+### 4. `gaming.sh` - Gaming Stack
 Install kebutuhan gaming:
 - Gamemode
 - Gamescope
@@ -196,7 +207,8 @@ sudo dnf install obs-virtualsource
 1. **Secure Boot** - Disable di BIOS sebelum install NVIDIA
 2. **Multilib** - Sudah otomatis enable di install.sh
 3. **Terra Repo** - Wajib untuk MangoWM + Noctalia
-4. **NVIDIA on-demand** - Pakai `prime-run <app>` untuk gaming
+4. **WiFi (Fedora Everything)** - Butuh `NetworkManager-wifi wpa_supplicant wireless-regdb` (udah include di install.sh)
+5. **NVIDIA on-demand** - Pakai `prime-run <app>` untuk gaming
 5. **Shell** - ZSH dengan Powerlevel10k (bukan fish)
 
 ---
@@ -232,6 +244,7 @@ Semua install dibuatkan log:
 - `install.sh` → `install.log`
 - `apps.sh` → `apps.log`
 - `gaming.sh` → `gaming.log`
+- `clean.sh` → langsung output aja (gak pake log)
 
 ---
 
