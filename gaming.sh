@@ -33,11 +33,9 @@ install_gaming_packages() {
     log_info "Installing gaming packages..."
 
     # Check multilib - Wajib untuk wine dan 32-bit
-    if ! grep -q "^\[multilib\]" /etc/yum.repos.d/fedora.repo 2>/dev/null; then
+    if ! grep -Eq "^\[multilib\]|^include=multilib" /etc/yum.repos.d/fedora.repo 2>/dev/null; then
         log_warn "Multilib not enabled - enabling now..."
-        sudo dnf config-manager --set-enabled fedora-multilib 2>/dev/null || \
-        sudo dnf install -y dnf-plugins-core && \
-        sudo dnf config-manager --set-enabled fedora-multilib
+        sudo sed -i '/^\[fedora\]/,/^\[/ s/^enabled=1/enabled=1\ninclude=multilib/' /etc/yum.repos.d/fedora.repo 2>/dev/null || true
     fi
 
     sudo dnf install -y \
@@ -124,14 +122,14 @@ configure_gamemode() {
 
     # Tambah user ke group gamemode
     if ! groups "$USER" | grep -q gamemode; then
-        sudo usermod -aG gamemode "$USER"
+        sudo usermod -aG gamemode "$(whoami)"
         log_ok "User ${USER} ditambahkan ke group gamemode."
         log_warn "Logout/login agar group aktif."
     else
         log_ok "User sudah di group gamemode."
     fi
 
-    sudo systemctl enable --now gamemoded || true
+    systemctl --user enable --now gamemoded 2>/dev/null || log_warn "User service sudah jalan atau gagal"
     log_ok "gamemode configured."
     log_info "  Aktifkan di game: gamemoderun <app>"
     log_info "  Steam: gamemoderun %command%"

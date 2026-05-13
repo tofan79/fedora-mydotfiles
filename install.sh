@@ -19,7 +19,7 @@ log_warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 log_err()  { echo -e "${RED}[ERROR]${NC} $*"; }
 
 if [[ -f "$LOG_FILE" ]]; then
-    mv "$LOG_FILE" "${LOG_FILE}.old.$(date +%Y%m%d%H%M%S)}"
+    mv "$LOG_FILE" "${LOG_FILE}.old.$(date +%Y%m%d%H%M%S)"
 fi
 
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -224,8 +224,8 @@ add_repositories() {
             https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || {
             log_warn "Direct URL failed, trying mirrorlist..."
             sudo dnf install -y dnf-plugins-core 2>/dev/null || true
-            sudo dnf install -y --repofrompath 'rpmfusion-free,https://mirrors.rpmfusion.org/free/fedora/$(rpm -E %fedora)/$(uname -m)/os/' \
-                             --repofrompath 'rpmfusion-nonfree,https://mirrors.rpmfusion.org/nonfree/fedora/$(rpm -E %fedora)/$(uname -m)/os/' \
+            sudo dnf install -y --repofrompath "rpmfusion-free,https://mirrors.rpmfusion.org/free/fedora/$(rpm -E %fedora)/$(uname -m)/os/" \
+                             --repofrompath "rpmfusion-nonfree,https://mirrors.rpmfusion.org/nonfree/fedora/$(rpm -E %fedora)/$(uname -m)/os/" \
                              rpmfusion-free-release rpmfusion-nonfree-release 2>/dev/null || true
         }
     fi
@@ -235,8 +235,8 @@ add_repositories() {
         log_ok "Terra repository already installed. Skipping."
     else
         log_info "Installing Terra repository..."
-        sudo dnf install --nogpgcheck \
-            --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' \
+        sudo dnf install -y --nogpgcheck \
+            --repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" \
             terra-release 2>/dev/null || log_warn "Terra repo failed — will use RPMFusion instead"
     fi
 
@@ -328,7 +328,8 @@ install_packages() {
         libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig \
         git curl wget rsync xorg-x11-server-Xwayland
 
-    sudo dnf install -y linux-firmware || log_warn "linux-firmware install failed"
+    sudo dnf install -y linux-firmware wireless-regdb || log_warn "linux-firmware install failed"
+    sudo dnf install -y NetworkManager-wifi wpa_supplicant || log_warn "NetworkManager-wifi install failed"
     if ! sudo dnf install -y amd-gpu-firmware 2>/dev/null; then
         log_info "amd-gpu-firmware not available (Fedora 40+)"
     fi
@@ -696,10 +697,8 @@ install_mangowm() {
         google-noto-color-emoji-fonts \
         jq python3
 
-    # Wayland core packages (usually included, but ensure explicitly)
+    # Wayland core (libwayland-* already pulled as deps)
     sudo dnf install -y \
-        wayland \
-        wayland-protocols \
         libinput \
         libxkbcommon \
         seatd \
@@ -807,8 +806,7 @@ install_tela_icon_theme() {
     local temp_dir="/tmp/tela-icon-theme"
     rm -rf "$temp_dir"
     if git clone --depth 1 https://github.com/vinceliuice/Tela-icon-theme.git "$temp_dir" 2>/dev/null; then
-        cd "$temp_dir" && ./install.sh -a 2>/dev/null
-        cd "$SCRIPT_DIR"
+        (cd "$temp_dir" && ./install.sh -a) 2>/dev/null || log_warn "Tela install script failed"
         rm -rf "$temp_dir"
         log_ok "Tela icon theme installed."
     else
@@ -945,6 +943,7 @@ install_zsh() {
 
     # Create new zshrc
     cat > "$zshrc" << 'ZSHEOF'
+export ZSH="$HOME/.oh-my-zsh"
 
 # Powerlevel10k theme
 ZSH_THEME="powerlevel10k/powerlevel10k"
@@ -955,8 +954,9 @@ plugins=(
     zsh-autosuggestions
     zsh-syntax-highlighting
     fzf
-    zsh-navigation-tools
 )
+
+source $ZSH/oh-my-zsh.sh
 
 # Eza aliases (like fish)
 alias ls='eza --icons'
@@ -968,7 +968,6 @@ alias cat='bat --style=plain'
 # Navigation
 alias ..='cd ..'
 alias ...='cd ../..'
-alias ....='cd ../../..'
 alias ....='cd ../../..'
 
 # Apps aliases (from fish config)
@@ -1010,7 +1009,7 @@ ZSHEOF
     log_info "  - zsh-autosuggestions (auto-complete)"
     log_info "  - zsh-syntax-highlighting (syntax highlight)"
     log_info "  - fzf (interactive search: Ctrl+R history, Ctrl+T files)"
-    log_info "  - zsh-navigation-tools (Ctrl+P history, n-list)"
+    log_info "  - zsh-navigation-tools (optional, clone manual kalo mau)"
     log_info "  - zoxide (smart cd)"
     log_info "  - Docker/Docker Compose shortcuts"
     log_info "  - Eza aliases (ls, ll, tree, etc)"
@@ -1030,9 +1029,14 @@ set_kitty_default() {
         return 0
     fi
 
+    # Register kitty as alternative first (idempotent), then set it
+    if ! sudo update-alternatives --display x-terminal-emulator 2>/dev/null | grep -q kitty; then
+        sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/kitty 50 2>/dev/null || true
+    fi
     sudo update-alternatives --set x-terminal-emulator /usr/bin/kitty 2>/dev/null || \
     sudo alternatives --set x-terminal-emulator /usr/bin/kitty 2>/dev/null || \
-        log_warn "update-alternatives failed. Manual: sudo update-alternatives --set x-terminal-emulator /usr/bin/kitty"
+        sudo ln -sf /usr/bin/kitty /usr/local/bin/x-terminal-emulator 2>/dev/null || \
+        log_warn "Gagal set default terminal. Manual: sudo ln -sf /usr/bin/kitty /usr/local/bin/x-terminal-emulator"
 
     local kde_desktop_file="/usr/share/applications/org.kde.konsole.desktop"
     if [[ -f "$kde_desktop_file" ]]; then

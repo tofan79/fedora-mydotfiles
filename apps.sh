@@ -36,7 +36,7 @@ install_apps() {
     sudo dnf install -y \
         nautilus nautilus-extensions python3-nautilus \
         yazi mpv imv \
-        gnome-disk-utility gnome-software \
+        gnome-disk-utility PackageKit \
         pavucontrol \
         telegram-desktop \
         tesseract tesseract-langpack-eng \
@@ -57,33 +57,44 @@ install_apps() {
     }
 
     # Brave browser - dari official repo
-    log_info "Installing Brave browser..."
-    sudo dnf install -y brave-browser 2>/dev/null || log_warn "Brave unavailable - skip"
+    if ! rpm -q brave-browser &>/dev/null; then
+        log_info "Adding Brave browser repository..."
+        sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo 2>/dev/null || {
+            sudo curl -fsSLo /etc/yum.repos.d/brave-browser.repo https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+        }
+        sudo rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-browser.asc 2>/dev/null || true
+        log_info "Installing Brave browser..."
+        sudo dnf install -y brave-browser 2>/dev/null || log_warn "Brave install failed"
+    else
+        log_ok "Brave browser already installed."
+    fi
 
     log_ok "Core apps installed."
 }
 
 # ---------------------------------------------------
-install_flatpak_apps() {
+install_flatpak() {
     if ! command -v flatpak &>/dev/null; then
-        log_warn "flatpak tidak ditemukan. Skip flatpak apps."
-        return 0
+        log_info "Installing flatpak..."
+        sudo dnf install -y flatpak
+    else
+        log_ok "Flatpak already installed."
     fi
 
-    # Tambah Flathub kalau belum ada
+    # Tambah Flathub system-wide kalau belum ada
     if ! flatpak remote-list --system 2>/dev/null | grep -q flathub; then
-        log_info "Adding Flathub repository..."
+        log_info "Adding Flathub repository (system-wide)..."
         sudo flatpak remote-add --if-not-exists flathub \
             https://flathub.org/repo/flathub.flatpakrepo || {
-            log_warn "Flathub add failed - skipping flatpak apps"
+            log_warn "Flathub add failed"
             return 0
         }
-        log_ok "Flathub added."
+        log_ok "Flathub added (system-wide)."
     else
-        log_ok "Flathub already configured."
+        log_ok "Flathub already configured (system-wide)."
     fi
 
-    log_ok "Flatpak apps installed."
+    log_ok "Flatpak + Flathub siap. Install apps manual: flatpak install flathub <app-id>"
 }
 
 # ---------------------------------------------------
@@ -192,6 +203,22 @@ NAUTEXTEOF
 }
 
 # ---------------------------------------------------
+fix_terminal_desktop() {
+    local apps=(btop nvim yazi)
+    mkdir -p ~/.local/share/applications
+    for app in "${apps[@]}"; do
+        local src="/usr/share/applications/${app}.desktop"
+        local dst="$HOME/.local/share/applications/${app}.desktop"
+        if [[ -f "$src" ]] && ! grep -q "kitty" "$dst" 2>/dev/null; then
+            cp "$src" "$dst"
+            sed -i 's|^Exec=\(.*\)$|Exec=kitty -e \1|' "$dst"
+            sed -i 's/^Terminal=true/Terminal=false/' "$dst"
+            log_ok "Fixed desktop: ${app} (kitty)"
+        fi
+    done
+}
+
+# ---------------------------------------------------
 preflight_checks() {
     log_info "Running preflight checks..."
 
@@ -223,8 +250,9 @@ preflight_checks() {
 main() {
     preflight_checks
     install_apps
-    install_flatpak_apps
+    install_flatpak
     install_nautilus_localsend
+    fix_terminal_desktop
 
     echo ""
     log_ok "========================================"
