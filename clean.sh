@@ -36,6 +36,13 @@ rm -rf ~/.cache/thumbnails/* 2>/dev/null && echo "  ✔ Thumbnail cache cleaned"
 echo -e "\n[8/8] Flatpak unused runtimes..."
 flatpak uninstall --unused -y 2>/dev/null && echo "  ✔ Unused flatpak removed"
 
+echo -e "\n[9/9] Nix garbage collection..."
+if command -v nix-collect-garbage &>/dev/null; then
+    sudo nix-collect-garbage -d 2>/dev/null && echo "  ✔ Nix store cleaned"
+else
+    echo "  - Nix not installed, skipping"
+fi
+
 echo -e "\n========================================="
 echo "           CLEANUP COMPLETE"
 echo "========================================="
