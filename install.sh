@@ -342,7 +342,8 @@ install_packages() {
     sudo dnf install -y \
         eza python3-pip pipx fastfetch fish kitty mokutil flatpak git \
         neovim starship bat fzf snapper zoxide \
-        bibata-cursor-themes btop podman podman-docker podman-compose
+        bibata-cursor-themes btop podman podman-docker podman-compose \
+        bluez bluez-tools
 
     # Tela-nord-dark icon theme (from GitHub release)
     if [[ ! -d /usr/share/icons/Tela-nord-dark ]]; then
@@ -594,6 +595,18 @@ configure_firewalld() {
         sudo firewall-cmd --permanent --add-service=mdns 2>/dev/null || true
         sudo firewall-cmd --reload 2>/dev/null || true
         log_ok "Firewall: mDNS service added."
+    fi
+
+    # Bluetooth
+    if rpm -q bluez &>/dev/null; then
+        if ! systemctl is-active bluetooth &>/dev/null; then
+            sudo systemctl enable --now bluetooth 2>/dev/null || true
+            log_ok "bluetooth enabled."
+        else
+            log_ok "bluetooth already running."
+        fi
+    else
+        log_warn "bluez not installed — bluetooth may not work."
     fi
 }
 
