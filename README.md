@@ -59,10 +59,10 @@ Preflight checks, mirror selection, DNF tuning, multilib, repos → packages →
 
 | Kategori | Packages |
 |----------|----------|
-| **Kernel** | kernel-devel, kernel-headers, linux-firmware, wireless-regdb, alsa-firmware, sof-firmware, amd-gpu-firmware, acpid |
+| **Kernel** | kernel-devel, kernel-headers, linux-firmware, wireless-regdb, alsa-firmware, sof-firmware, acpid |
 | **Xorg** | xorg-x11-server-Xwayland |
 | **Mesa (x86_64)** | mesa-vulkan-drivers, mesa-dri-drivers, mesa-libGLU, vulkan-loader, vulkan-validation-layers, vulkan-tools |
-| **32-bit (i686)** | glibc, libgcc, libstdc++, pulseaudio-libs, openssl-libs, flac-libs, libogg, libvorbis, libsndfile, libasyncns, libexif, libICE, libSM, libuuid, libwayland-client, libwayland-server, libXtst, nss-mdns, tcp_wrappers-libs, unixODBC, sane-backends-libs, ocl-icd, json-c, libaom, libvpx, llvm-libs |
+| **32-bit (i686)** | glibc, libgcc, libstdc++, pulseaudio-libs, openssl-libs, flac-libs, libogg, libvorbis, libsndfile, libasyncns, libexif, libICE, libSM, libuuid, libwayland-client, libwayland-server, libXtst, nss-mdns, unixODBC, sane-backends-libs, ocl-icd, json-c, libaom, libvpx, llvm-libs |
 | **Audio** | pipewire-utils, pipewire-alsa, pipewire-pulseaudio, pipewire-jack-audio-connection-kit, wireplumber, playerctl, pamixer |
 | **VAAPI/VDPAU** | libva-utils, vdpauinfo |
 | **Wayland Qt** | qt5-qtwayland, qt6-qtwayland |
@@ -168,9 +168,9 @@ Desktop entry btop, nvim, yazi dibungkus `kitty -e` agar tidak pake terminal def
 | **32-bit Gaming** | mesa-dri-drivers.i686, mesa-vulkan-drivers.i686, mesa-libGLU.i686, gamemode.i686 | RPM Fusion |
 | **Steam** | steam | RPM Fusion nonfree |
 | **Wine** | wine, wine.i686, winetricks | RPM Fusion free |
-| **Launcher** | heroic-games-launcher, lutris, prismlauncher | Terra + RPM Fusion |
+| **Launcher** | lutris, prismlauncher | RPM Fusion |
 | **Streaming** | sunshine, obs-studio | RPM Fusion free |
-| **GPU Tools** | lact, ryzenadj, goverlay | RPM Fusion free |
+| **GPU Tools** | ryzenadj (COPR), goverlay | COPR shdwchn10/ryzenadj + RPM Fusion free |
 
 #### Config
 
