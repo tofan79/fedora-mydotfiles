@@ -740,8 +740,21 @@ install_sddm() {
         }
     fi
 
-    # Install SDDM theme
-    try sudo dnf install -y sddm-theme-circles
+    # Copy bundled SDDM themes
+    local sddm_src="${SCRIPT_DIR}/dotfiles/sddm"
+    if [[ -d "$sddm_src" ]]; then
+        sudo mkdir -p /usr/share/sddm/themes
+        for theme_dir in "$sddm_src"/*/; do
+            local theme_name
+            theme_name=$(basename "$theme_dir")
+            if [[ -d "/usr/share/sddm/themes/$theme_name" ]]; then
+                log_ok "SDDM theme '$theme_name' already exists. Skipping."
+            else
+                sudo cp -r "$theme_dir" "/usr/share/sddm/themes/$theme_name"
+                log_ok "SDDM theme '$theme_name' copied."
+            fi
+        done
+    fi
 
     sudo mkdir -p /etc/sddm.conf.d
 
@@ -762,7 +775,7 @@ DefaultUser=$current_user
 UserAuthFile=.Xauthority
 
 [Theme]
-Current=circle
+Current=field
 
 [Users]
 MaximumUid=60000
