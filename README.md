@@ -49,13 +49,14 @@ Preflight checks, mirror selection, DNF tuning, multilib, repos → packages →
 
 #### Repositori yang ditambahkan
 
-| Repo | Sumber |
-|------|--------|
-| RPM Fusion free | rpmfusion-free-release |
-| RPM Fusion nonfree | rpmfusion-nonfree-release |
-| EPEL | epel-release (untuk timeshift) |
-| Terra (FyraLabs) | terra-release + terra-release-multimedia |
-| ASUS COPR | lukenukem/asus-linux (asusctl, asusd) |
+| Repo | Sumber | Priority |
+|------|--------|----------|
+| Fedora | fedora, updates | 10 (tertinggi) |
+| RPM Fusion | free, nonfree, tainted | 20 |
+| COPR | asus-linux, ryzenadj, dll | 50 |
+| Terra (FyraLabs) | terra-release | 200 (fallback) |
+
+Official repo diutamakan — Terra cuma fallback kalau package gak ada di repo resmi.
 
 #### System Packages
 
@@ -127,8 +128,10 @@ cups, cups-filters, cups-browsed, cups-pk-helper, cups-pdf, ghostscript, gutenpr
 
 #### SDDM
 
+- **sddm-x11** (bukan sddm biasa) — biar cursor muncul di laptop hybrid AMD+NVIDIA
 - Wayland=false, X11=true, autologin user
 - Theme: orbital (Clockwork — qylock, bundled di dotfiles/sddm/)
+- Cursor: Bibata-Modern-Classic
 - Disable conflicting DMs: gdm, lightdm, lxdm, greetd, plasmalogin
 - Default target: graphical.target
 
@@ -269,59 +272,15 @@ flatpak install flathub io.github.webapp_manager_linux.webapp_manager_linux
 2. **Fish shell** — Default shell. Config di `~/.config/fish/config.fish` (dari dotfiles).
 3. **MangoWM + Noctalia** — Dari Terra repo (FyraLabs). Session: `MangoWM`.
 4. **ASUS tools** — Dari COPR `lukenukem/asus-linux` (asusctl, asusd).
-5. **Timeshift** — Dari EPEL. Pastikan `epel-release` terinstall.
+5. **Timeshift** — Dari EPEL (kalau tersedia) atau skip — snapper sudah cukup untuk BTRFS snapshot.
 6. **Flatpak CLI** (`flatpak` package) terinstall — tinggal `flatpak install flathub` untuk app.
 7. **Podman** terinstall dengan `podman-docker` + `podman-compose` — kompatibel docker CLI.
 8. **Tidak ada package media/editing** (OBS, Kdenlive, Blender, GIMP, Inkscape, VLC, LibreOffice, dll) dan **tidak ada virtualization** (virt-manager, qemu) atau **DB/web server** (postgresql, redis, nginx) — install manual sesuai kebutuhan via flatpak atau dnf.
 9. **clean.sh** ada di `dotfiles/clean/clean.sh` — jalankan manual untuk cleanup.
 10. **grub-btrfs** tidak diinstall karena incompatibel dengan BLS (BootLoader Spec) Fedora. Snapper tetap berfungsi penuh untuk timeline snapshot.
-
-## DeckShift — Gaming Mode (Steam Deck–style)
-
-> **Note:** Fitur opsional, jalanin `./deckshift/deckshift.sh` setelah install.sh + gaming.sh.
-
-DeckShift ngubah Fedora jadi dual-mode: **Desktop Mode** (MangoWM biasa) ↔ **Gaming Mode** (Steam Big Picture di Gamescope).
-Adaptasi dari [Omarchy DeckShift](https://git.no-signal.uk/nosignal/deckshift) buat Fedora + MangoWM.
-
-### Cara Kerja
-
-| Tombol | Aksi |
-|--------|------|
-| `Super+Shift+T` | Desktop → Gaming Mode (Turbo, reboot ke SDDM → Gamescope) |
-| `Super+Shift+R` | Gaming → Desktop (di dalam Gamescope atau desktop) |
-
-### Flow
-
-```text
-Desktop (MangoWM)
-  │  Super+Shift+S
-  ├─ switch-to-gaming:
-  │   ├─ Backup MangoWM settings (blur/shadow/animasi → mati)
-  │   ├─ Save CPU governor + power profile → performance
-  │   └─ systemctl restart sddm → boot ke Gaming session
-  │
-Gaming (Gamescope + Steam Big Picture)
-  │  Super+Shift+R
-  ├─ gaming-keybind-monitor (python-evdev) detect combo
-  │   └─ switch-to-desktop:
-  │       ├─ Restore CPU governor + power profile
-  │       ├─ Restore MangoWM settings
-  │       └─ systemctl restart sddm → boot ke MangoWM
-```
-
-### Struktur File
-
-| Path | Fungsi |
-|------|--------|
-| `deckshift/deckshift.sh` | Installer — deploy scripts, configs, keybinds |
-| `deckshift/bin/switch-to-gaming` | Entry point dari MangoWM |
-| `deckshift/bin/switch-to-desktop` | Exit point dari Gamescope |
-| `deckshift/bin/gaming-session-switch` | Toggle SDDM autologin session |
-| `deckshift/bin/gamescope-session-nm-wrapper` | Session wrapper (performance mode + Steam launch) |
-| `deckshift/bin/gaming-keybind-monitor` | Python evdev daemon (Super+Shift+R listener) |
-| `deckshift/bin/deckshift-portal-recovery` | Restart portal stack setelah gaming return |
-| `deckshift/sessions/gamescope-session-steam-nm.desktop` | SDDM session entry |
-| `deckshift/config/` | sudoers, polkit, udev, security, pipewire, env |
+11. **Repo priority** — official > RPM Fusion > COPR > Terra. Package dari official repo diutamakan.
+12. **Tela icon theme** — install dengan `install.sh nord` (bukan `-nord`, sintaks berubah di versi 2025-02-10).
+13. **SDDM cursor** — Wajib `sddm-x11` di laptop hybrid AMD+NVIDIA biar cursor muncul di login screen.
 
 ## Tips
 
@@ -331,15 +290,6 @@ sudo dnf update --refresh
 
 # Cleanup system
 bash dotfiles/clean/clean.sh
-
-# Install DeckShift gaming mode
-./deckshift/deckshift.sh
-
-# Verify DeckShift
-./deckshift/deckshift.sh verify
-
-# Remove DeckShift
-./deckshift/deckshift.sh uninstall
 
 # Runtime via mise
 mise use --global node@22

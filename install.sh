@@ -39,14 +39,14 @@ setup_mirrors() {
     if [[ -f "$fedora_repo" ]]; then
         local fedora_mirror=""
 for mirror in \
-            "https://sg.mirrors.cicku.me/fedora" \
-            "https://download.nus.edu.sg/mirror/fedora" \
+            "https://mirror.nevacloud.com/fedora/fedora-linux" \
+            "https://download.nus.edu.sg/mirror/fedora/linux" \
+            "https://sg.mirrors.cicku.me/fedora/linux" \
+            "https://ftp.jaist.ac.jp/pub/Linux/Fedora" \
             "https://ftp.riken.go.jp/fedora/linux" \
-            "https://ftp.nara.wide.ad.jp/pub/Linux/fedora" \
-            "https://mirror.papua.go.id/fedora" \
-            "https://mirror.unej.ac.id/fedora" \
+            "https://ftp.kaist.ac.kr/fedora/linux" \
             "https://dl.fedoraproject.org/pub/fedora/linux" \
-            "https://mirrors.kernel.org/fedora"; do
+            "https://mirrors.kernel.org/fedora/linux"; do
             if timeout 3 curl -s -I -L "$mirror" -o /dev/null 2>/dev/null; then
                 fedora_mirror="$mirror"
                 break
@@ -54,7 +54,7 @@ for mirror in \
         done
         if [[ -n "$fedora_mirror" ]]; then
             log_info "Using Fedora mirror: $fedora_mirror"
-            local mirror_url="${fedora_mirror}/linux/releases/\$releasever/Everything/\$basearch/os"
+            local mirror_url="${fedora_mirror}/releases/\$releasever/Everything/\$basearch/os"
             sudo sed -i "s|^#*baseurl=.*|baseurl=$mirror_url|" "$fedora_repo" 2>/dev/null || true
             sudo sed -i "s|^metalink=.*|#metalink=|" "$fedora_repo" 2>/dev/null || true
         fi
@@ -124,7 +124,11 @@ preflight_checks() {
         log_warn " Disable Secure Boot di BIOS/UEFI sebelum"
         log_warn " melanjutkan instalasi NVIDIA drivers."
         log_warn "============================================"
-        read -rp "Lanjutkan tetap? [y/N]: " sb_response
+        if [[ -t 0 ]]; then
+            read -rp "Lanjutkan tetap? [y/N]: " sb_response
+        else
+            sb_response="Y"
+        fi
         case "$sb_response" in
             [Yy]*) log_warn "Melanjutkan dengan Secure Boot aktif. Risiko ditanggung sendiri." ;;
             *)     log_err "Install dibatalkan. Disable Secure Boot dulu."; exit 1 ;;
@@ -144,7 +148,11 @@ preflight_checks() {
     if [[ "$conflict_found" -eq 1 ]]; then
         log_warn "Pertimbangkan disable service di atas sebelum install."
         log_warn "Contoh: sudo systemctl disable --now tlp"
-        read -rp "Lanjutkan tetap? [Y/n]: " conflict_response
+        if [[ -t 0 ]]; then
+            read -rp "Lanjutkan tetap? [Y/n]: " conflict_response
+        else
+            conflict_response="Y"
+        fi
         case "$conflict_response" in
             [Nn]*) log_err "Install dibatalkan."; exit 1 ;;
         esac
@@ -302,7 +310,7 @@ install_packages() {
         libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig \
         git curl wget rsync xorg-x11-server-Xwayland
 
-    try sudo dnf install -y linux-firmware wireless-regdb alsa-firmware sof-firmware
+    try sudo dnf install -y linux-firmware wireless-regdb alsa-firmware
     try sudo dnf install -y NetworkManager-wifi wpa_supplicant
     log_info "AMD firmware: sudah include di linux-firmware (Fedora 40+) — skip"
 
@@ -311,7 +319,7 @@ install_packages() {
         vulkan-loader vulkan-tools vulkan-validation-layers
 
     # Nobara-style 32-bit compatibility libraries
-    try sudo dnf install -y \
+    try sudo dnf install -y --skip-unavailable \
         glibc.i686 libgcc.i686 libstdc++.i686 \
         pulseaudio-libs.i686 \
         openssl-libs.i686 \
@@ -325,7 +333,6 @@ install_packages() {
         nss-mdns.i686 \
         unixODBC.i686 \
         sane-backends-libs.i686 \
-        ocl-icd.i686 \
         json-c.i686 libaom.i686 libvpx.i686 \
         llvm-libs.i686
 
@@ -346,11 +353,12 @@ install_packages() {
         bluez bluez-tools
 
     # Tela-nord-dark icon theme (from GitHub release)
-    if [[ ! -d /usr/share/icons/Tela-nord-dark ]]; then
-        local tela_version="2025-03-03"
+    local tela_icon_dir="${HOME}/.local/share/icons/Tela-nord-dark"
+    if [[ ! -d "$tela_icon_dir" ]]; then
+        local tela_version="2025-02-10"
         if curl -fL "https://github.com/vinceliuice/Tela-icon-theme/archive/refs/tags/${tela_version}.zip" -o /tmp/tela-icon.zip 2>/dev/null; then
             unzip -o /tmp/tela-icon.zip -d /tmp/tela-icon 2>/dev/null
-            bash /tmp/tela-icon/Tela-icon-theme-${tela_version}/install.sh -nord >/dev/null 2>&1 && \
+            bash /tmp/tela-icon/Tela-icon-theme-${tela_version}/install.sh nord >/dev/null 2>&1 && \
                 log_ok "Tela-nord-dark icon theme installed" || \
                 log_warn "Failed to install Tela icon theme (continue)"
             rm -rf /tmp/tela-icon /tmp/tela-icon.zip
@@ -368,9 +376,10 @@ install_packages() {
         autoconf automake libtool \
         elfutils-libelf-devel kernel-devel kernel-headers
 
-    try sudo dnf install -y \
+    try sudo dnf install -y --skip-unavailable \
         jetbrains-mono-fonts \
-        noto-fonts google-noto-color-emoji-fonts \
+        google-noto-sans-fonts google-noto-serif-fonts \
+        google-noto-color-emoji-fonts \
         liberation-fonts \
         fira-code-fonts
     # Nerd Fonts
@@ -382,12 +391,32 @@ install_packages() {
             log_ok "JetBrains Mono Nerd Font installed" || true
     fi
 
-    # Microsoft core fonts — tidak ada di repo Fedora, pakai installer RPM dari sourceforge
+    # Microsoft core fonts
     if ! fc-list | grep -qi "arial\|times new roman\|verdana" 2>/dev/null; then
-        log_info "Installing Microsoft core fonts via RPM installer..."
+        log_info "Installing Microsoft core fonts..."
         try sudo dnf install -y curl cabextract xorg-x11-font-utils fontconfig
-        try sudo rpm -i https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm 2>/dev/null
-        log_ok "Microsoft core fonts installed."
+
+        local mstt_installed=false
+        local mstt_urls=(
+            "https://sourceforge.net/projects/mscorefonts2/files/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm/download"
+            "https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm"
+        )
+        local mstt_rpm="/tmp/msttcore-fonts-installer.noarch.rpm"
+
+        for url in "${mstt_urls[@]}"; do
+            if curl -fL -o "$mstt_rpm" "$url" 2>/dev/null; then
+                if sudo dnf install -y "$mstt_rpm" &>/dev/null; then
+                    mstt_installed=true
+                    log_ok "Microsoft core fonts installed."
+                fi
+                rm -f "$mstt_rpm"
+                break
+            fi
+        done
+
+        if [[ "$mstt_installed" == "false" ]]; then
+            log_warn "Microsoft core fonts download failed — skip."
+        fi
     else
         log_ok "Microsoft core fonts already installed."
     fi
@@ -412,7 +441,7 @@ install_packages() {
 
 # ---------------------------------------------------
 install_multimedia() {
-    log_info "Installing multimedia codecs..."
+    log_info "Installing full multimedia codecs..."
 
     if ! rpm -q rpmfusion-free-release-tainted &>/dev/null; then
         try sudo dnf install -y rpmfusion-free-release-tainted
@@ -426,14 +455,24 @@ install_multimedia() {
 
     try sudo dnf install -y x264 x265
 
-    log_info "Installing multimedia and sound-and-video groups..."
-    try sudo dnf group install -y --with-optional multimedia sound-and-video || \
-    try sudo dnf group install -y multimedia sound-and-video
+    log_info "Installing multimedia group (codec framework)..."
+    try sudo dnf group install -y --with-optional --allowerasing --skip-broken multimedia || \
+    try sudo dnf group install -y --allowerasing --skip-broken multimedia
 
-    log_warn "Mesa freeworld skipped - dangerous!"
-    log_info "Manual: sudo dnf install mesa-va-drivers-freeworld"
+    log_info "Installing additional codec plugins..."
+    try sudo dnf install -y --skip-unavailable \
+        gstreamer1-plugins-bad-freeworld \
+        gstreamer1-plugins-ugly \
+        gstreamer1-plugin-libav \
+        gstreamer1-plugins-bad-nonfree \
+        libavcodec-freeworld
 
-    log_ok "Multimedia codecs installed."
+    log_info "Installing VAAPI hardware video acceleration..."
+    try sudo dnf install -y --skip-unavailable \
+        mesa-va-drivers-freeworld \
+        mesa-vdpau-drivers-freeworld
+
+    log_ok "Full multimedia codecs installed."
 }
 
 # ---------------------------------------------------
@@ -448,7 +487,11 @@ install_nvidia() {
         return 0
     fi
 
-    read -rp "Install NVIDIA drivers? [Y/n]: " response
+    if [[ -t 0 ]]; then
+        read -rp "Install NVIDIA drivers? [Y/n]: " response
+    else
+        response="Y"
+    fi
     case "$response" in
         [Nn]*) log_warn "Skipping NVIDIA."; return 0 ;;
     esac
@@ -465,17 +508,9 @@ install_nvidia() {
     sudo_refresher_pid=$!
 
     # Nobara-equivalent NVIDIA library stack
+    # Di Fedora 44, library NVIDIA sudah included dalam akmod-nvidia / xorg-x11-drv-nvidia-cuda
     log_info "Installing NVIDIA library stack..."
-    try sudo dnf install -y \
-        nvidia-driver-libs \
-        nvidia-driver-libs.i686 \
-        nvidia-driver-cuda-libs \
-        nvidia-driver-cuda-libs.i686 \
-        libnvidia-ml \
-        libnvidia-ml.i686 \
-        libnvidia-fbc \
-        nvidia-libXNVCtrl \
-        libnvidia-cfg \
+    try sudo dnf install -y --skip-unavailable \
         nvidia-modprobe \
         nvidia-persistenced \
         nvidia-settings
@@ -484,11 +519,9 @@ install_nvidia() {
     log_info "Installing NVIDIA Wayland + VAAPI..."
     try sudo dnf install -y egl-wayland
 
-    # VAAPI hardware decode/encode — prefer nvidia-vaapi-driver
-    if try sudo dnf install -y nvidia-vaapi-driver; then
-        log_ok "nvidia-vaapi-driver installed (HW decode via VAAPI)"
-    elif try sudo dnf install -y libva-nvidia-driver; then
-        log_ok "libva-nvidia-driver installed (fallback)"
+    # VAAPI hardware decode — nvidia-vaapi-driver gak ada di Fedora 44, langsung libva-nvidia-driver
+    if sudo dnf install -y libva-nvidia-driver &>/dev/null; then
+        log_ok "libva-nvidia-driver installed (NVIDIA HW decode via VAAPI)"
     else
         log_warn "VAAPI not available — software decode fallback"
     fi
@@ -702,7 +735,11 @@ install_mangowm() {
     if ! rpm -q terra-release &>/dev/null; then
         log_warn "Terra repo not found — cannot install MangoWM/Noctalia"
         log_warn "Please add Terra repo first: sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra\$releasever' terra-release"
-        read -rp "Install only SDDM (without MangoWM/Noctalia)? [Y/n]: " response
+        if [[ -t 0 ]]; then
+            read -rp "Install only SDDM (without MangoWM/Noctalia)? [Y/n]: " response
+        else
+            response="Y"
+        fi
         case "$response" in
             [Nn]*) return 0 ;;
         esac
@@ -717,7 +754,11 @@ install_mangowm() {
         return 0
     fi
 
-    read -rp "Install MangoWM + Noctalia from Terra? [Y/n]: " response
+    if [[ -t 0 ]]; then
+        read -rp "Install MangoWM + Noctalia from Terra? [Y/n]: " response
+    else
+        response="Y"
+    fi
     case "$response" in
         [Nn]*)
             log_warn "Skipping MangoWM/Noctalia installation."
@@ -760,7 +801,7 @@ install_mangowm() {
 
     # SDDM
     sudo dnf install -y \
-        sddm qt6-qtdeclarative qt6-qtsvg qt6-qtquickcontrols2
+        sddm-x11 qt6-qtdeclarative qt6-qtsvg qt6-qtquickcontrols2
 
     log_ok "MangoWM + Noctalia installed from Terra."
 
@@ -773,9 +814,15 @@ install_sddm() {
 
     # Check if SDDM is installed
     if ! rpm -q sddm &>/dev/null; then
-        sudo dnf install -y sddm qt6-qtdeclarative qt6-qtsvg qt6-qtquickcontrols2 || {
-            log_warn "SDDM installation failed. Skipping SDDM configuration."
-            return 0
+        # Use sddm-x11 to ensure cursor works on hybrid GPUs
+        if rpm -q sddm-wayland-generic &>/dev/null; then
+            sudo dnf swap -y sddm-wayland-generic sddm-x11 2>/dev/null || sudo dnf remove -y sddm-wayland-generic
+        fi
+        sudo dnf install -y sddm-x11 qt6-qtdeclarative qt6-qtsvg qt6-qtquickcontrols2 || {
+            sudo dnf install -y sddm qt6-qtdeclarative qt6-qtsvg qt6-qtquickcontrols2 || {
+                log_warn "SDDM installation failed. Skipping SDDM configuration."
+                return 0
+            }
         }
     fi
 
@@ -811,6 +858,10 @@ UserAuthFile=.Xauthority
 
 [Theme]
 Current=orbital
+
+[Cursor]
+Theme=Bibata-Modern-Classic
+Size=24
 
 [Users]
 MaximumUid=60000
@@ -857,9 +908,17 @@ copy_dotfiles() {
     mkdir -p ~/.config
 
     local dirs=(
-        fastfetch gtk-3.0 gtk-4.0 kitty mango
-        nvim qt5ct qt6ct yazi zed
+        btop fish gtk-3.0 gtk-4.0 kitty mango
+        noctalia nvim qt5ct qt6ct
+        telegram-desktop xdg-desktop-portal yazi zed
     )
+
+    # Copy user-dirs.dirs (file, bukan directory)
+    local user_dirs_src="${DOTFILES_DIR}/user-dirs.dirs"
+    if [[ -f "$user_dirs_src" ]] && [[ ! -f "${HOME}/.config/user-dirs.dirs" ]]; then
+        cp "$user_dirs_src" "${HOME}/.config/user-dirs.dirs" 2>/dev/null || true
+        log_ok "Copied user-dirs.dirs"
+    fi
 
     local backup_dir=""
     # Only create backup if we actually have existing configs
@@ -965,66 +1024,15 @@ setup_mise() {
         return 0
     fi
 
-    # Verifikasi GPG signature sebelum eksekusi (metode resmi mise)
-    # Ref: https://mise.jdx.dev/installing-mise.html
-    local MISE_GPG_KEY="24853EC9F655CE80B48E6C3A8B81C9D17413A06D"
-    local gpg_ok=false
-
-    if command -v gpg &>/dev/null; then
-        log_info "Verifying mise install script via GPG..."
-
-        # Import public key mise dari keyserver
-        if gpg --keyserver hkps://keys.openpgp.org \
-               --recv-keys "$MISE_GPG_KEY" 2>/dev/null; then
-
-            # Download signature dan decrypt untuk mendapatkan install script
-            if curl -fsSL https://mise.run/install.sh.sig \
-                   | gpg --decrypt > /tmp/mise-install.sh 2>/dev/null; then
-                chmod +x /tmp/mise-install.sh
-                log_ok "mise install script GPG signature verified."
-                gpg_ok=true
-            else
-                log_warn "GPG decrypt failed — signature mismatch atau keyserver tidak respond."
-            fi
-        else
-            log_warn "Tidak bisa import GPG key mise dari keyserver."
-        fi
+    # Metode resmi: curl https://mise.run | sh
+    # GPG signature verification sudah deprecated — installer sekarang pakai SHA256 checksum built-in
+    # Ref: https://mise.jdx.dev/getting-started.html
+    log_info "Downloading and running mise installer..."
+    if curl https://mise.run | sh 2>/dev/null; then
+        log_ok "mise installed."
     else
-        log_warn "gpg tidak terinstall — tidak bisa verifikasi signature."
+        log_warn "mise install failed — bisa coba manual: curl https://mise.run | sh"
     fi
-
-    if [[ "$gpg_ok" == "true" ]]; then
-        log_info "Running verified mise installer..."
-        sh /tmp/mise-install.sh 2>/dev/null || {
-            log_warn "mise install failed (verified)"
-        }
-        rm -f /tmp/mise-install.sh
-    else
-        # Fallback: curl | sh tanpa verifikasi, tapi dengan peringatan eksplisit
-        log_warn "============================================"
-        log_warn " FALLBACK: Menjalankan mise installer TANPA"
-        log_warn " verifikasi GPG. Lanjutkan hanya jika kamu"
-        log_warn " percaya koneksi dan mise.run aman."
-        log_warn "============================================"
-        read -rp "Lanjutkan install mise tanpa verifikasi GPG? [y/N]: " mise_response
-        case "$mise_response" in
-            [Yy]*)
-                curl https://mise.run | sh 2>/dev/null || {
-                    log_warn "mise install failed"
-                    return 0
-                }
-                ;;
-            *)
-                log_warn "mise install dibatalkan. Install manual nanti:"
-                log_warn "  gpg --keyserver hkps://keys.openpgp.org --recv-keys $MISE_GPG_KEY"
-                log_warn "  curl https://mise.run/install.sh.sig | gpg --decrypt > mise-install.sh"
-                log_warn "  sh mise-install.sh"
-                return 0
-                ;;
-        esac
-    fi
-
-    log_ok "mise installed."
 }
 
 # ---------------------------------------------------
@@ -1090,6 +1098,40 @@ create_user_folders() {
 }
 
 # ---------------------------------------------------
+set_repo_priorities() {
+    log_info "Setting repository priorities (official > copr > terra)..."
+    local priorities=(
+        "fedora:10"
+        "updates:10"
+        "fedora-cisco-openh264:15"
+        "rpmfusion-free:20"
+        "rpmfusion-free-updates:20"
+        "rpmfusion-nonfree:20"
+        "rpmfusion-nonfree-updates:20"
+        "rpmfusion-free-tainted:25"
+        "*copr*:50"
+        "terra:200"
+    )
+    for entry in "${priorities[@]}"; do
+        local repo="${entry%%:*}"
+        local prio="${entry##*:}"
+        if [[ "$repo" == "*copr*" ]]; then
+            for copr_repo in /etc/yum.repos.d/_copr_*.repo; do
+                [[ -f "$copr_repo" ]] || continue
+                local name
+                name=$(grep -oP '^\[copr:\K[^\]]+' "$copr_repo" 2>/dev/null | head -1)
+                [[ -n "$name" ]] && sudo dnf config-manager --setopt="copr:${name}.priority=$prio" --save 2>/dev/null || true
+            done
+        else
+            if [[ -f "/etc/yum.repos.d/${repo}.repo" ]]; then
+                sudo dnf config-manager --setopt="${repo}.priority=${prio}" --save 2>/dev/null || true
+            fi
+        fi
+    done
+    log_ok "Repository priorities configured."
+}
+
+# ---------------------------------------------------
 cleanup() {
     log_info "Cleaning up..."
     sudo dnf autoremove -y
@@ -1103,6 +1145,7 @@ main() {
     enable_multilib
     configure_dnf
     add_repositories
+    set_repo_priorities
     install_packages
     install_multimedia
     install_nvidia

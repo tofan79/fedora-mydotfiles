@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # apps.sh — Daily apps untuk Fedora + MangoWM
 # Jalankan setelah install.sh && reboot
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="${SCRIPT_DIR}/apps.log"
@@ -12,7 +12,7 @@ log_ok()   { echo -e "${GREEN}[OK]${NC}   $*"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 log_err()  { echo -e "${RED}[ERROR]${NC} $*"; }
 
-try() { local cmd="$*"; "$@" || { local rc=$?; log_warn "FAILED (exit ${rc}): ${cmd}"; return 0; }; }
+try() { local cmd="$*"; "$@" || { local rc=$?; log_warn "FAILED (exit ${rc}): ${cmd}"; return $rc; }; }
 
 if [[ -f "$LOG_FILE" ]]; then mv "$LOG_FILE" "${LOG_FILE}.old.$(date +%Y%m%d%H%M%S)"; fi
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -24,13 +24,12 @@ install_core() {
     log_info "Installing core apps..."
 
     try sudo dnf install -y --skip-unavailable \
-        nautilus nautilus-extensions python3-nautilus \
+        nautilus nautilus-extensions \
         yazi mpv imv \
         gnome-disk-utility \
         pavucontrol \
-        telegram-desktop \
         tesseract tesseract-langpack-eng \
-        ImageMagick zbar-tools translate-shell \
+        ImageMagick translate-shell \
         libmtp gvfs-mtp \
         xdg-desktop-portal-gtk \
         python3-gobject
@@ -160,11 +159,17 @@ fix_terminal_desktop() {
     for app in btop nvim yazi; do
         local src="/usr/share/applications/${app}.desktop"
         local dst="$HOME/.local/share/applications/${app}.desktop"
-        if [[ -f "$src" ]] && ! grep -q "kitty" "$dst" 2>/dev/null; then
-            cp "$src" "$dst"
-            sed -i 's|^Exec=\(.*\)$|Exec=kitty -e \1|; s/^Terminal=true/Terminal=false/' "$dst"
-            log_ok "Fixed desktop: ${app} (kitty)"
+        if [[ ! -f "$src" ]]; then
+            log_warn "Source desktop not found: ${src}"
+            continue
         fi
+        if grep -q "kitty" "$dst" 2>/dev/null; then
+            continue
+        fi
+        mkdir -p "$(dirname "$dst")"
+        cp "$src" "$dst"
+        sed -i 's|^Exec=\(.*\)$|Exec=kitty -e \1|; s/^Terminal=true/Terminal=false/' "$dst"
+        log_ok "Fixed desktop: ${app} (kitty)"
     done
 }
 
@@ -197,7 +202,8 @@ main() {
     install_core
     install_browser
 
-    read -rp "Install dev tools (vim, tmux, htop, net-tools, dll)? [Y/n]: " dev_choice
+    dev_choice="Y"
+    [[ -t 0 ]] && read -rp "Install dev tools (vim, tmux, htop, net-tools, dll)? [Y/n]: " dev_choice
     case "$dev_choice" in [Nn]*) log_warn "Skipping dev tools." ;; *) install_dev ;; esac
 
     install_nautilus_localsend

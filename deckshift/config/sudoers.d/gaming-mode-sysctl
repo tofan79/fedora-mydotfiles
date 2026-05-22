@@ -1,5 +1,0 @@
-%wheel ALL=(ALL) NOPASSWD: /usr/bin/sysctl -w vm.swappiness=*
-%wheel ALL=(ALL) NOPASSWD: /usr/bin/sysctl -w vm.max_map_count=*
-%wheel ALL=(ALL) NOPASSWD: /usr/bin/sysctl -w kernel.sched_latency_ns=*
-%wheel ALL=(ALL) NOPASSWD: /usr/bin/sysctl -w kernel.sched_migration_cost_ns=*
-%wheel ALL=(ALL) NOPASSWD: /usr/bin/sysctl -w kernel.sched_min_granularity_ns=*
