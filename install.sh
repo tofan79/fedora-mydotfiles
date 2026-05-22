@@ -348,6 +348,22 @@ install_packages() {
         neovim starship bat fzf snapper zoxide \
         bibata-cursor-theme btop podman podman-docker podman-compose
 
+    # Tela-nord-dark icon theme (from GitHub release)
+    if [[ ! -d /usr/share/icons/Tela-nord-dark ]]; then
+        local tela_version="2025-03-03"
+        if curl -fL "https://github.com/vinceliuice/Tela-icon-theme/archive/refs/tags/${tela_version}.zip" -o /tmp/tela-icon.zip 2>/dev/null; then
+            unzip -o /tmp/tela-icon.zip -d /tmp/tela-icon 2>/dev/null
+            bash /tmp/tela-icon/Tela-icon-theme-${tela_version}/install.sh -nord >/dev/null 2>&1 && \
+                log_ok "Tela-nord-dark icon theme installed" || \
+                log_warn "Failed to install Tela icon theme (continue)"
+            rm -rf /tmp/tela-icon /tmp/tela-icon.zip
+        else
+            log_warn "Could not download Tela icon theme (no network). Nautilus will use default icons."
+        fi
+    else
+        log_ok "Tela-nord-dark icon theme already installed"
+    fi
+
     try sudo dnf install -y timeshift
 
     try sudo dnf install -y \
