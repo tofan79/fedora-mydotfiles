@@ -468,9 +468,12 @@ install_multimedia() {
         libavcodec-freeworld
 
     log_info "Installing VAAPI hardware video acceleration..."
-    try sudo dnf install -y --skip-unavailable \
-        mesa-va-drivers-freeworld \
-        mesa-vdpau-drivers-freeworld
+    if rpm -q mesa-va-drivers &>/dev/null; then
+        try sudo dnf swap -y mesa-va-drivers mesa-va-drivers-freeworld
+    else
+        try sudo dnf install -y --skip-unavailable mesa-va-drivers-freeworld
+    fi
+    try sudo dnf install -y --skip-unavailable mesa-vdpau-drivers-freeworld
 
     log_ok "Full multimedia codecs installed."
 }
