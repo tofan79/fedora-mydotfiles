@@ -110,7 +110,7 @@ cups, cups-filters, cups-browsed, cups-pk-helper, cups-pdf, ghostscript, gutenpr
 
 #### Snapper (BTRFS)
 
-- Config root, timeline limit: 3 hourly / 5 daily / 2 weekly / 1 monthly
+- Config root, limit max 5 snapshots, timeline: 3 hourly / 5 daily / 2 weekly / 1 monthly
 - Timer: snapper-timeline.timer + snapper-cleanup.timer aktif
 
 #### ASUS TUF
@@ -126,12 +126,13 @@ cups, cups-filters, cups-browsed, cups-pk-helper, cups-pdf, ghostscript, gutenpr
 #### SDDM
 
 - Wayland=false, X11=true, autologin user
+- Theme: circle (sddm-theme-circles)
 - Disable conflicting DMs: gdm, lightdm, lxdm, greetd, plasmalogin
 - Default target: graphical.target
 
 #### DNF Config
 
-- installonly_limit=3, max_parallel_downloads=15, defaultyes=True, fastestmirror=True
+- installonly_limit=3, max_parallel_downloads=15, defaultyes=True, fastestmirror=True, skip_if_unavailable=True
 
 ---
 
@@ -261,6 +262,7 @@ flatpak install flathub io.github.webapp_manager_linux.webapp_manager_linux
 ## Nobara-specific — Tidak Ada di Fedora
 
 Package Nobara yang tidak tersedia di repositori Fedora.
+> **⚠️ Tidak bisa tambah Nobara repo.** Nobara tidak publish public repo untuk Fedora vanilla. Package mereka di-patch ulang (kernel, mesa, wine, gamescope-session, dll) dan akan **conflict** dengan RPM Fusion + Fedora official. DNF bakal bentrok dependency.
 
 | Nobara Package | Alternatif Fedora / Flatpak |
 |----------------|-----------------------------|

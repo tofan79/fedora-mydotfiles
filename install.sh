@@ -208,6 +208,11 @@ configure_dnf() {
         needs_update=true
     fi
 
+    if ! grep -q "^skip_if_unavailable=True" "$dnf_conf" 2>/dev/null; then
+        echo "skip_if_unavailable=True" | sudo tee -a "$dnf_conf" > /dev/null
+        needs_update=true
+    fi
+
     if [[ "$needs_update" == "true" ]]; then
         log_ok "DNF configuration updated."
     else
@@ -621,8 +626,8 @@ install_snapper() {
     fi
 
     sudo snapper -c root set-config \
-        NUMBER_LIMIT=10 \
-        NUMBER_LIMIT_IMPORTANT=5 \
+        NUMBER_LIMIT=5 \
+        NUMBER_LIMIT_IMPORTANT=3 \
         TIMELINE_CREATE=yes \
         TIMELINE_CLEANUP=yes \
         TIMELINE_LIMIT_HOURLY=3 \
@@ -735,6 +740,9 @@ install_sddm() {
         }
     fi
 
+    # Install SDDM theme
+    try sudo dnf install -y sddm-theme-circles
+
     sudo mkdir -p /etc/sddm.conf.d
 
     # Get current username - handle if USER is empty
@@ -748,10 +756,17 @@ install_sddm() {
 [General]
 InputMethod=none
 Numlock=on
+HaltCommand=/usr/bin/systemctl poweroff
+RebootCommand=/usr/bin/systemctl reboot
 DefaultUser=$current_user
+UserAuthFile=.Xauthority
 
 [Theme]
-Current=
+Current=circle
+
+[Users]
+MaximumUid=60000
+MinimumUid=1000
 
 [Wayland]
 Enable=false
@@ -759,7 +774,7 @@ Enable=false
 [X11]
 Enable=true
 SDDMEOF
-        log_ok "SDDM configured — username: $current_user"
+        log_ok "SDDM configured — username: $current_user, theme: circle"
     fi
 
     if systemctl is-enabled sddm.service &>/dev/null 2>&1; then
