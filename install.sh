@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MangoWM Fedora 43 Installation Script
+# MangoWM Fedora 44 Installation Script
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
