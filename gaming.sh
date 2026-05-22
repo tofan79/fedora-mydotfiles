@@ -80,11 +80,10 @@ install_launchers() {
     log_info "Installing gaming launchers..."
 
     try sudo dnf install -y \
-        heroic-games-launcher \
         lutris \
         prismlauncher
 
-    log_ok "Gaming launchers installed."
+    log_ok "Gaming launchers installed (heroic via flatpak manual)."
 }
 
 # ---------------------------------------------------
