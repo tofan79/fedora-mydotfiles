@@ -1,4 +1,4 @@
 %wheel ALL=(ALL) NOPASSWD: /usr/local/bin/gaming-session-switch
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart sddm
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart NetworkManager
-%wheel ALL=(ALL) NOPASSWD: /usr/bin/loginctl terminate-user *
+# loginctl terminate-user is generated dynamically in deckshift.sh

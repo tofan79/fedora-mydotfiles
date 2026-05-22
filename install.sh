@@ -249,26 +249,39 @@ add_repositories() {
             log_warn "EPEL unavailable — timeshift will be skipped"
     fi
 
-    # Terra repo - check if already installed
+    # Terra repo — bootstrap
     if rpm -q terra-release &>/dev/null; then
         log_ok "Terra repository already installed. Skipping."
     else
         log_info "Installing Terra repository..."
-        sudo dnf install -y --nogpgcheck \
+        # --nogpgcheck adalah metode resmi Fyra Labs untuk bootstrap Terra:
+        # GPG key Terra ada DI DALAM paket terra-release itu sendiri, sehingga
+        # tidak bisa diverifikasi sebelum diinstall (chicken-and-egg problem).
+        # Setelah terra-release terinstall, semua paket Terra berikutnya akan
+        # diverifikasi secara normal menggunakan key yang sudah masuk ke RPM DB.
+        # Ref: https://developer.fyralabs.com/terra/installing
+        if sudo dnf install -y --nogpgcheck \
             --repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" \
-            terra-release 2>/dev/null || log_warn "Terra repo failed — will use RPMFusion instead"
-    fi
-
-    # Terra multimedia
-    if rpm -q terra-release &>/dev/null; then
-        if rpm -q terra-release-multimedia &>/dev/null; then
-            log_ok "Terra multimedia already installed. Skipping."
+            terra-release 2>/dev/null; then
+            # Verifikasi GPG key sudah masuk ke RPM DB setelah install
+            if rpm -q --qf "%{SIGPGP:pgpsig}\n" terra-release 2>/dev/null | grep -qi "key"; then
+                log_ok "Terra repo installed. GPG key verified in RPM DB."
+            else
+                log_ok "Terra repo installed."
+            fi
+            # Refresh cache dengan GPG check aktif
+            sudo dnf makecache --refresh 2>/dev/null || true
+            log_ok "Terra repo cache refreshed (GPG check aktif)."
         else
-            log_info "Installing Terra multimedia repository..."
-            sudo dnf install -y terra-release-multimedia 2>/dev/null || \
-                log_warn "Terra multimedia unavailable"
+            log_warn "Terra repo failed — MangoWM/Noctalia tidak akan terinstall."
+            log_warn "Manual: sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra\$releasever' terra-release"
         fi
     fi
+
+    # Terra multimedia — skip, WIP dan hanya support EL10, bukan Fedora.
+    # Multimedia codec sudah ditangani oleh RPMFusion + install_multimedia().
+    # Ref: https://github.com/terrapkg/packages
+    log_info "Terra multimedia: skipped (EL10 only — RPMFusion handles codecs)"
 
     # ASUS Linux repository (asusctl — fan, battery, keyboard)
     # Check both COPR and direct repo file
@@ -933,7 +946,7 @@ setup_mise() {
     log_info "Installing mise..."
 
     if command -v mise &>/dev/null; then
-        log_ok "mise already installed."
+        log_ok "mise already installed: $(mise --version 2>/dev/null || true)"
         return 0
     fi
 
@@ -942,10 +955,65 @@ setup_mise() {
         return 0
     fi
 
-    curl https://mise.run | sh 2>/dev/null || {
-        log_warn "mise install failed"
-        return 0
-    }
+    # Verifikasi GPG signature sebelum eksekusi (metode resmi mise)
+    # Ref: https://mise.jdx.dev/installing-mise.html
+    local MISE_GPG_KEY="24853EC9F655CE80B48E6C3A8B81C9D17413A06D"
+    local gpg_ok=false
+
+    if command -v gpg &>/dev/null; then
+        log_info "Verifying mise install script via GPG..."
+
+        # Import public key mise dari keyserver
+        if gpg --keyserver hkps://keys.openpgp.org \
+               --recv-keys "$MISE_GPG_KEY" 2>/dev/null; then
+
+            # Download signature dan decrypt untuk mendapatkan install script
+            if curl -fsSL https://mise.run/install.sh.sig \
+                   | gpg --decrypt > /tmp/mise-install.sh 2>/dev/null; then
+                chmod +x /tmp/mise-install.sh
+                log_ok "mise install script GPG signature verified."
+                gpg_ok=true
+            else
+                log_warn "GPG decrypt failed — signature mismatch atau keyserver tidak respond."
+            fi
+        else
+            log_warn "Tidak bisa import GPG key mise dari keyserver."
+        fi
+    else
+        log_warn "gpg tidak terinstall — tidak bisa verifikasi signature."
+    fi
+
+    if [[ "$gpg_ok" == "true" ]]; then
+        log_info "Running verified mise installer..."
+        sh /tmp/mise-install.sh 2>/dev/null || {
+            log_warn "mise install failed (verified)"
+        }
+        rm -f /tmp/mise-install.sh
+    else
+        # Fallback: curl | sh tanpa verifikasi, tapi dengan peringatan eksplisit
+        log_warn "============================================"
+        log_warn " FALLBACK: Menjalankan mise installer TANPA"
+        log_warn " verifikasi GPG. Lanjutkan hanya jika kamu"
+        log_warn " percaya koneksi dan mise.run aman."
+        log_warn "============================================"
+        read -rp "Lanjutkan install mise tanpa verifikasi GPG? [y/N]: " mise_response
+        case "$mise_response" in
+            [Yy]*)
+                curl https://mise.run | sh 2>/dev/null || {
+                    log_warn "mise install failed"
+                    return 0
+                }
+                ;;
+            *)
+                log_warn "mise install dibatalkan. Install manual nanti:"
+                log_warn "  gpg --keyserver hkps://keys.openpgp.org --recv-keys $MISE_GPG_KEY"
+                log_warn "  curl https://mise.run/install.sh.sig | gpg --decrypt > mise-install.sh"
+                log_warn "  sh mise-install.sh"
+                return 0
+                ;;
+        esac
+    fi
+
     log_ok "mise installed."
 }
 

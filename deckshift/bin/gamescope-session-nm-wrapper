@@ -55,35 +55,19 @@ trap cleanup EXIT INT TERM
 # Detect best resolution from connected displays
 RES_W=1920
 RES_H=1080
-REFRESH=60
+REFRESH=144
 
-# Try to get EDID info from DRM
-if command -v drm_info &>/dev/null; then
-    # drm_info might provide modes — but it's complex, skip for now
-    true
-fi
-
-# Use connected outputs from sysfs
-for connector in /sys/class/drm/*/status; do
-    if [[ -f "$connector" ]] && [[ "$(cat "$connector")" == "connected" ]]; then
-        modes_file="$(dirname "$connector")/modes"
-        if [[ -f "$modes_file" ]]; then
-            MODE=$(head -1 "$modes_file" 2>/dev/null || true)
-            if [[ -n "$MODE" ]]; then
-                # Parse mode like "1920x1080" or "1920x1080@165"
-                if echo "$MODE" | grep -q '@'; then
-                    RES_W=$(echo "$MODE" | cut -d'x' -f1)
-                    RES_H=$(echo "$MODE" | cut -d'x' -f2 | cut -d'@' -f1)
-                    REFRESH=$(echo "$MODE" | cut -d'@' -f2)
-                else
-                    RES_W=$(echo "$MODE" | cut -d'x' -f1)
-                    RES_H=$(echo "$MODE" | cut -d'x' -f2)
-                fi
-                break
-            fi
-        fi
+# Auto-detect via kmsprint jika tersedia (dari libdrm-utils)
+if command -v kmsprint &>/dev/null; then
+    DETECTED=$(kmsprint 2>/dev/null \
+        | grep -oP '\d+x\d+@\d+(\.\d+)?' \
+        | head -1 || true)
+    if [[ -n "$DETECTED" ]]; then
+        RES_W=$(echo "$DETECTED" | cut -d'x' -f1)
+        RES_H=$(echo "$DETECTED" | cut -d'x' -f2 | cut -d'@' -f1)
+        REFRESH=$(echo "$DETECTED" | cut -d'@' -f2 | cut -d'.' -f1)
     fi
-done
+fi
 
 # Build gamescope args
 GAMESCOPE_ARGS=()

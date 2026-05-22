@@ -200,10 +200,11 @@ main() {
     log_info "MangoHud: MANGOHUD=1 prime-run %command%"
     echo ""
     log_info "Flatpak gaming (install manual):"
+    log_info "  com.heroicgameslauncher.hgl   # Heroic (GOG, Epic, Amazon)"
     log_info "  com.discord.Discord"
     log_info "  com.vysp3r.ProtonPlus"
     log_info "  com.usebottles.bottles"
-    log_info "  net.davidotek.pupgui2   # ProtonUp-Qt (Proton/Wine GE)"
+    log_info "  net.davidotek.pupgui2         # ProtonUp-Qt (Proton/Wine GE)"
     echo ""
 }
 

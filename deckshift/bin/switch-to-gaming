@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DeckShift — Switch from MangoWM to Gaming Mode
-set -uo pipefail
+set -euo pipefail
 
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/deckshift"
 SDDM_CONF="/etc/sddm.conf.d/theme.conf"

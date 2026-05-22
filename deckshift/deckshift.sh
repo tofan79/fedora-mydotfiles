@@ -20,7 +20,6 @@ SYSTEM_BIN_DIR="/usr/local/bin"
 SYSTEM_LIB_DIR="/usr/local/lib/gamescope-nvidia"
 SUDOERS_DIR="/etc/sudoers.d"
 POLKIT_DIR="/etc/polkit-1/rules.d"
-UDEV_DIR="/etc/udev/rules.d"
 SECURITY_DIR="/etc/security/limits.d"
 ENV_DIR="/etc/environment.d"
 PIPEWIRE_DIR="/etc/pipewire/pipewire.conf.d"
@@ -84,6 +83,7 @@ install_packages() {
         jq
         ntfs-3g
         udisks2
+        libdrm-utils
         steam
         gamescope
         mangohud
@@ -161,8 +161,15 @@ deploy_configs() {
 
     # sudoers
     sudo mkdir -p "$SUDOERS_DIR"
-    substep "sudoers.d/gaming-session-switch"
-    sudo install -m 0440 "$CONFIG_DIR/sudoers.d/gaming-session-switch" "$SUDOERS_DIR/gaming-session-switch"
+    local current_user="${USER:-$(whoami)}"
+    substep "sudoers.d/gaming-session-switch (user: $current_user)"
+    sudo tee "$SUDOERS_DIR/gaming-session-switch" > /dev/null << SUDOEOF
+%wheel ALL=(ALL) NOPASSWD: /usr/local/bin/gaming-session-switch
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart sddm
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart NetworkManager
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/loginctl terminate-user ${current_user}
+SUDOEOF
+    sudo chmod 0440 "$SUDOERS_DIR/gaming-session-switch"
     substep "sudoers.d/gaming-mode-sysctl"
     sudo install -m 0440 "$CONFIG_DIR/sudoers.d/gaming-mode-sysctl" "$SUDOERS_DIR/gaming-mode-sysctl"
 
@@ -172,11 +179,6 @@ deploy_configs() {
     sudo install -m 0644 "$CONFIG_DIR/polkit-1/50-gamescope-networkmanager.rules" "$POLKIT_DIR/50-gamescope-networkmanager.rules"
     substep "polkit-1/50-udisks-gaming.rules"
     sudo install -m 0644 "$CONFIG_DIR/polkit-1/50-udisks-gaming.rules" "$POLKIT_DIR/50-udisks-gaming.rules"
-
-    # udev
-    sudo mkdir -p "$UDEV_DIR"
-    substep "udev/99-gaming-performance.rules"
-    sudo install -m 0644 "$CONFIG_DIR/udev/99-gaming-performance.rules" "$UDEV_DIR/99-gaming-performance.rules"
 
     # security limits
     sudo mkdir -p "$SECURITY_DIR"
@@ -304,12 +306,12 @@ verify() {
                   gamescope-session-nm-wrapper gaming-keybind-monitor \
                   deckshift-portal-recovery; do
         if [[ -x "$SYSTEM_BIN_DIR/$script" ]]; then
-            substest="${C_GREEN}ok${C_RESET}"
+            _status="${C_GREEN}ok${C_RESET}"
         else
-            substest="${C_RED}missing${C_RESET}"
+            _status="${C_RED}missing${C_RESET}"
             errors=$((errors + 1))
         fi
-        echo -e "  ${C_DIM}>${C_RESET} $SYSTEM_BIN_DIR/$script ... $substest"
+        echo -e "  ${C_DIM}>${C_RESET} $SYSTEM_BIN_DIR/$script ... $_status"
     done
 
     # Check SDDM session
@@ -326,7 +328,6 @@ verify() {
         "$SUDOERS_DIR/gaming-mode-sysctl"
         "$POLKIT_DIR/50-gamescope-networkmanager.rules"
         "$POLKIT_DIR/50-udisks-gaming.rules"
-        "$UDEV_DIR/99-gaming-performance.rules"
         "$SECURITY_DIR/99-gaming-memlock.conf"
         "$ENV_DIR/99-shader-cache.conf"
         "$PIPEWIRE_DIR/10-gaming-latency.conf"
@@ -351,9 +352,9 @@ verify() {
 
     # Check keybinds
     if grep -q "switch-to-gaming" "$MANGO_CONF_DIR/keybinds.conf" 2>/dev/null; then
-        echo -e "  ${C_DIM}>${C_RESET} MangoWM keybind: SUPER+SHIFT+S → switch-to-gaming ... ${C_GREEN}ok${C_RESET}"
+        echo -e "  ${C_DIM}>${C_RESET} MangoWM keybind: SUPER+SHIFT+T → switch-to-gaming ... ${C_GREEN}ok${C_RESET}"
     else
-        echo -e "  ${C_DIM}>${C_RESET} MangoWM keybind: SUPER+SHIFT+S → switch-to-gaming ... ${C_YELLOW}not set${C_RESET}"
+        echo -e "  ${C_DIM}>${C_RESET} MangoWM keybind: SUPER+SHIFT+T → switch-to-gaming ... ${C_YELLOW}not set${C_RESET}"
     fi
 
     if [[ $errors -eq 0 ]]; then
@@ -390,7 +391,6 @@ uninstall() {
     sudo rm -f "$SUDOERS_DIR/gaming-mode-sysctl"
     sudo rm -f "$POLKIT_DIR/50-gamescope-networkmanager.rules"
     sudo rm -f "$POLKIT_DIR/50-udisks-gaming.rules"
-    sudo rm -f "$UDEV_DIR/99-gaming-performance.rules"
     sudo rm -f "$SECURITY_DIR/99-gaming-memlock.conf"
     sudo rm -f "$ENV_DIR/99-shader-cache.conf"
     sudo rm -f "$PIPEWIRE_DIR/10-gaming-latency.conf"
