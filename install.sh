@@ -155,29 +155,8 @@ preflight_checks() {
 
 # ---------------------------------------------------
 enable_multilib() {
-    log_info "Enabling multilib repository (32-bit support)..."
-
-    # Check if already enabled
-    if grep -q "^\[multilib\]" /etc/yum.repos.d/fedora.repo 2>/dev/null || \
-       grep -q "^include=multilib" /etc/yum.repos.d/fedora.repo 2>/dev/null; then
-        log_ok "Multilib already enabled."
-        return 0
-    fi
-
-    if ! sudo dnf config-manager --set-enabled fedora-multilib 2>/dev/null; then
-        log_warn "config-manager failed, trying direct edit..."
-        # Use proper sed to add multilib include
-        sudo sed -i '/^\[fedora\]/,/^\[/ s/^enabled=1/enabled=1\ninclude=multilib/' /etc/yum.repos.d/fedora.repo 2>/dev/null || true
-    fi
-
-    # Verify it worked
-    if grep -q "^\[multilib\]" /etc/yum.repos.d/fedora.repo 2>/dev/null || \
-       grep -q "^include=multilib" /etc/yum.repos.d/fedora.repo 2>/dev/null; then
-        sudo dnf makecache 2>/dev/null || true
-        log_ok "Multilib enabled."
-    else
-        log_warn "Could not enable multilib. 32-bit packages may not install."
-    fi
+    log_info "Fedora 44: multilib (32-bit) sudah aktif secara default — skip."
+    log_ok "32-bit package support: available."
 }
 
 # ---------------------------------------------------
@@ -278,6 +257,13 @@ add_repositories() {
         fi
     fi
 
+    # Bibata cursor — via COPR peterwu/rendezvous
+    if ! sudo dnf copr list 2>/dev/null | grep -q "peterwu/rendezvous"; then
+        log_info "Adding peterwu/rendezvous COPR (Bibata cursor)..."
+        sudo dnf copr enable peterwu/rendezvous -y 2>/dev/null || \
+            log_warn "COPR peterwu/rendezvous gagal — bibata cursor akan skip"
+    fi
+
     # Terra multimedia — skip, WIP dan hanya support EL10, bukan Fedora.
     # Multimedia codec sudah ditangani oleh RPMFusion + install_multimedia().
     # Ref: https://github.com/terrapkg/packages
@@ -318,9 +304,7 @@ install_packages() {
 
     try sudo dnf install -y linux-firmware wireless-regdb alsa-firmware sof-firmware
     try sudo dnf install -y NetworkManager-wifi wpa_supplicant
-    if ! sudo dnf install -y amd-gpu-firmware 2>/dev/null; then
-        log_info "amd-gpu-firmware not available (Fedora 40+)"
-    fi
+    log_info "AMD firmware: sudah include di linux-firmware (Fedora 40+) — skip"
 
     sudo dnf install -y \
         mesa-vulkan-drivers mesa-dri-drivers mesa-libGLU \
@@ -339,7 +323,7 @@ install_packages() {
         libwayland-client.i686 libwayland-server.i686 \
         libXtst.i686 \
         nss-mdns.i686 \
-        tcp_wrappers-libs.i686 \
+        # tcp_wrappers-libs.i686 — dihapus dari Fedora 39+
         unixODBC.i686 \
         sane-backends-libs.i686 \
         ocl-icd.i686 \
@@ -359,7 +343,7 @@ install_packages() {
     sudo dnf install -y \
         eza python3-pip pipx fastfetch fish kitty mokutil flatpak git \
         neovim starship bat fzf snapper zoxide \
-        bibata-cursor-theme btop podman podman-docker podman-compose
+        bibata-cursor-themes btop podman podman-docker podman-compose
 
     # Tela-nord-dark icon theme (from GitHub release)
     if [[ ! -d /usr/share/icons/Tela-nord-dark ]]; then
@@ -386,8 +370,8 @@ install_packages() {
 
     try sudo dnf install -y \
         jetbrains-mono-fonts \
-        noto-fonts noto-emoji-fonts google-noto-color-emoji-fonts \
-        liberation-fonts mscore-fonts \
+        noto-fonts google-noto-color-emoji-fonts \
+        liberation-fonts \
         fira-code-fonts
     # Nerd Fonts
     if command -v curl &>/dev/null; then
@@ -396,6 +380,16 @@ install_packages() {
             unzip -o /tmp/JetBrainsMono.zip -d ~/.local/share/fonts/ 2>/dev/null && \
             fc-cache -f ~/.local/share/fonts/ 2>/dev/null && \
             log_ok "JetBrains Mono Nerd Font installed" || true
+    fi
+
+    # Microsoft core fonts — tidak ada di repo Fedora, pakai installer RPM dari sourceforge
+    if ! fc-list | grep -qi "arial\|times new roman\|verdana" 2>/dev/null; then
+        log_info "Installing Microsoft core fonts via RPM installer..."
+        try sudo dnf install -y curl cabextract xorg-x11-font-utils fontconfig
+        try sudo rpm -i https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm 2>/dev/null
+        log_ok "Microsoft core fonts installed."
+    else
+        log_ok "Microsoft core fonts already installed."
     fi
 
     sudo dnf install -y \
@@ -461,10 +455,11 @@ install_nvidia() {
 
     log_info "Installing NVIDIA drivers (setara Nobara)..."
 
-    # Core: kernel module (akmod) + driver + CUDA
+    # Core: kernel module (akmod) + driver + CUDA + power management
     sudo dnf install -y \
         akmod-nvidia \
-        xorg-x11-drv-nvidia-cuda
+        xorg-x11-drv-nvidia-cuda \
+        xorg-x11-drv-nvidia-power
 
     while true; do sudo -v; sleep 60; done &
     sudo_refresher_pid=$!
@@ -489,11 +484,11 @@ install_nvidia() {
     log_info "Installing NVIDIA Wayland + VAAPI..."
     try sudo dnf install -y egl-wayland
 
-    # VAAPI hardware decode/encode
-    if try sudo dnf install -y libva-nvidia-driver; then
-        log_ok "libva-nvidia-driver installed (HW decode)"
-    elif try sudo dnf install -y nvidia-vaapi-driver; then
-        log_ok "nvidia-vaapi-driver installed"
+    # VAAPI hardware decode/encode — prefer nvidia-vaapi-driver
+    if try sudo dnf install -y nvidia-vaapi-driver; then
+        log_ok "nvidia-vaapi-driver installed (HW decode via VAAPI)"
+    elif try sudo dnf install -y libva-nvidia-driver; then
+        log_ok "libva-nvidia-driver installed (fallback)"
     else
         log_warn "VAAPI not available — software decode fallback"
     fi
@@ -534,6 +529,9 @@ install_nvidia() {
     else
         log_warn "Module not found - check after reboot"
     fi
+
+    # Enable nvidia-powerd untuk hybrid GPU power management
+    sudo systemctl enable --now nvidia-powerd 2>/dev/null || true
 
     setup_prime_run
     kill "$sudo_refresher_pid" 2>/dev/null || true
@@ -812,7 +810,7 @@ Enable=false
 [X11]
 Enable=true
 SDDMEOF
-        log_ok "SDDM configured — username: $current_user, theme: circle"
+        log_ok "SDDM configured — username: $current_user, theme: orbital"
     fi
 
     if systemctl is-enabled sddm.service &>/dev/null 2>&1; then

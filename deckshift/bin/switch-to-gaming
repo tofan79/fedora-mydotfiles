@@ -12,10 +12,10 @@ mkdir -p "$CACHE_DIR"
 # Save current MangoWM settings (blur, shadows, animations)
 if [[ -f "$MANGO_CONF" ]]; then
     cp "$MANGO_CONF" "$MANGO_CONF_BAK"
-    # Disable visual effects for gaming
-    sed -i 's/^blur=1/blur=0/' "$MANGO_CONF"
-    sed -i 's/^shadows=1/shadows=0/' "$MANGO_CONF"
-    sed -i 's/^animations=1/animations=0/' "$MANGO_CONF"
+    # Disable visual effects for gaming — handle berbagai format MangoWM
+    sed -i 's/^blur=1/blur=0/; s/^blur=true/blur=false/; s/^blur = 1/blur = 0/' "$MANGO_CONF"
+    sed -i 's/^shadows=1/shadows=0/; s/^shadows=true/shadows=false/' "$MANGO_CONF"
+    sed -i 's/^animations=1/animations=0/; s/^animations=true/animations=false/' "$MANGO_CONF"
     # Fast config reload via mmsg (if available)
     command -v mmsg &>/dev/null && mmsg -d reload_config 2>/dev/null || true
 fi

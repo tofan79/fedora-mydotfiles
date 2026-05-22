@@ -14,7 +14,14 @@ fi
 
 case "$1" in
     mango)
-        SESSION="mango.desktop"
+        # Auto-detect nama session MangoWM dari wayland-sessions
+        SESSION=$(ls /usr/share/wayland-sessions/ 2>/dev/null \
+            | grep -i mango | head -1 || true)
+        if [[ -z "$SESSION" ]]; then
+            echo "ERROR: MangoWM session tidak ditemukan di /usr/share/wayland-sessions/"
+            echo "Tersedia: $(ls /usr/share/wayland-sessions/ 2>/dev/null || echo 'none')"
+            exit 1
+        fi
         ;;
     gamescope)
         SESSION="gamescope-session-steam-nm.desktop"

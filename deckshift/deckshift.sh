@@ -137,13 +137,18 @@ deploy_scripts() {
     # Create NVIDIA gamescope wrapper
     sudo tee "$SYSTEM_LIB_DIR/gamescope" >/dev/null <<'EOF'
 #!/usr/bin/env bash
-# NVIDIA wrapper: adds --force-composition for NVIDIA GPUs
+# NVIDIA gamescope wrapper
+# --force-composition diperlukan di driver lama (<570), opsional di 595.x+
+# Hapus flag ini jika gamescope terasa lambat atau artifak di RTX 30-series
 ARGS=("$@")
 HAS_FORCE_COMP=0
 for arg in "${ARGS[@]}"; do
     [[ "$arg" == "--force-composition" ]] && HAS_FORCE_COMP=1 && break
 done
-if [[ $HAS_FORCE_COMP -eq 0 ]]; then
+# Cek driver version: hanya inject untuk driver < 570
+DRIVER_VER=$(cat /proc/driver/nvidia/version 2>/dev/null \
+    | grep -oP 'Kernel Module\s+\K[0-9]+' || echo "999")
+if [[ $HAS_FORCE_COMP -eq 0 && "$DRIVER_VER" -lt 570 ]]; then
     ARGS+=("--force-composition")
 fi
 exec /usr/bin/gamescope "${ARGS[@]}"

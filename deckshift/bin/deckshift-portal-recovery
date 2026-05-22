@@ -15,14 +15,13 @@ rm -f "$MARKER"
 notify-send "Gaming Mode" "Recovering desktop services..." 2>/dev/null || true
 
 # Restart portal stack sequentially (avoid race)
-systemctl --user stop xdg-desktop-portal-mango 2>/dev/null || true
+# xdg-desktop-portal-mango tidak exist di Fedora — MangoWM pakai wlr
 systemctl --user stop xdg-desktop-portal-wlr 2>/dev/null || true
 systemctl --user stop xdg-desktop-portal 2>/dev/null || true
 systemctl --user stop xdg-desktop-portal-gtk 2>/dev/null || true
 
 sleep 1
 
-systemctl --user start xdg-desktop-portal-mango 2>/dev/null || true
 systemctl --user start xdg-desktop-portal-wlr 2>/dev/null || true
 systemctl --user start xdg-desktop-portal 2>/dev/null || true
 systemctl --user start xdg-desktop-portal-gtk 2>/dev/null || true

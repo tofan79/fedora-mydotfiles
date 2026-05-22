@@ -90,23 +90,41 @@ install_launchers() {
 install_streaming_tools() {
     log_info "Installing streaming/remote-play tools..."
 
-    try sudo dnf install -y \
-        sunshine \
-        obs-studio
+    # OBS Studio — tersedia di RPMFusion
+    try sudo dnf install -y obs-studio
 
-    log_ok "Streaming tools installed."
+    # Sunshine — COPR lizardbyte/stable (tidak ada di repo standar Fedora)
+    if rpm -q sunshine &>/dev/null; then
+        log_ok "Sunshine already installed."
+    else
+        log_info "Trying Sunshine via COPR lizardbyte/stable..."
+        if sudo dnf copr enable lizardbyte/stable -y 2>/dev/null && \
+           sudo dnf install -y sunshine 2>/dev/null; then
+            log_ok "Sunshine installed."
+            log_info "  Enable: sudo systemctl enable --now sunshine"
+            log_info "  Web UI: https://localhost:47990"
+        else
+            log_warn "Sunshine COPR tidak tersedia untuk Fedora 44 — install manual:"
+            log_warn "  Flatpak: flatpak install flathub dev.lizardbyte.app.Sunshine"
+            log_warn "  RPM: https://github.com/LizardByte/Sunshine/releases"
+        fi
+    fi
+
+    log_ok "Streaming tools done."
 }
 
 # ---------------------------------------------------
 install_gpu_tools() {
     log_info "Installing GPU tuning tools..."
 
+    # lact = AMD GPU tool — tidak relevan untuk RTX 3050 (NVIDIA)
+    # Gunakan nvidia-settings untuk GPU tuning NVIDIA
     try sudo dnf install -y \
-        lact \
         ryzenadj \
         goverlay
 
     log_ok "GPU tools installed."
+    log_info "  GPU tuning NVIDIA: gunakan 'nvidia-settings' atau 'prime-run'"
 }
 
 # ---------------------------------------------------
