@@ -312,7 +312,7 @@ Adaptasi dari [Omarchy DeckShift](https://git.no-signal.uk/nosignal/deckshift) b
 
 | Tombol | Aksi |
 |--------|------|
-| `Super+Shift+S` | Desktop → Gaming Mode (reboot ke SDDM → Gamescope) |
+| `Super+Shift+T` | Desktop → Gaming Mode (Turbo, reboot ke SDDM → Gamescope) |
 | `Super+Shift+R` | Gaming → Desktop (di dalam Gamescope atau desktop) |
 
 ### Flow

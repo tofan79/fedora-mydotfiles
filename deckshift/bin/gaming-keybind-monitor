@@ -42,7 +42,7 @@ def main():
         sys.exit(1)
 
     sys.stderr.write(f"gaming-keybind-monitor: watching {keyboard.name} "
-                     f"({keyboard.path}) for Super+Shift+R\n")
+                     f"({keyboard.path}) for Super+Shift+R (exit gaming mode)\n")
 
     pressed = set()
     last_trigger = 0.0

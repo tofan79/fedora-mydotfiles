@@ -227,25 +227,23 @@ setup_keybinds() {
 
     local added=0
 
-    # Super+Shift+S → switch-to-gaming
-    # First remove existing minimized bind if it exists
-    if grep -q "bind = SUPER + SHIFT, s , minimized" "$keybinds_file" 2>/dev/null || \
-       grep -q "bind = SUPER + SHIFT, s, minimized" "$keybinds_file" 2>/dev/null; then
-        substep "Replacing SUPER+SHIFT+S (was 'minimized') with gaming toggle..."
-        sed -i '/bind = SUPER + SHIFT, s[ ,].*minimized$/c\bind = SUPER + SHIFT, s, spawn, \/usr\/local\/bin\/switch-to-gaming' "$keybinds_file"
+    # Super+Shift+T → switch-to-gaming (Turbo Gaming)
+    # Replace existing togglefloating bind
+    if grep -q "bind = SUPER + SHIFT, t, togglefloating" "$keybinds_file" 2>/dev/null; then
+        substep "Replacing SUPER+SHIFT+T (was 'togglefloating') → switch-to-gaming..."
+        sed -i '/bind = SUPER + SHIFT, t, togglefloating/c\bind = SUPER + SHIFT, t, spawn, \/usr\/local\/bin\/switch-to-gaming' "$keybinds_file"
         added=1
     fi
 
     # Super+Shift+R → switch-to-desktop (should be free)
     if ! grep -q "switch-to-desktop" "$keybinds_file" 2>/dev/null && ! grep -q "switch-to-gaming" "$keybinds_file" 2>/dev/null; then
-        substep "Adding SUPER+SHIFT+S/R → gaming toggle..."
-        # Add at end of file
+        substep "Adding SUPER+SHIFT+T/R → gaming toggle..."
         cat >> "$keybinds_file" <<'KEYEOF'
 
 # ═══════════════════════════════════════════
 # DeckShift — Gaming Mode
 # ═══════════════════════════════════════════
-bind = SUPER + SHIFT, s, spawn, /usr/local/bin/switch-to-gaming
+bind = SUPER + SHIFT, t, spawn, /usr/local/bin/switch-to-gaming
 bind = SUPER + SHIFT, r, spawn, /usr/local/bin/switch-to-desktop
 KEYEOF
         added=1
@@ -444,7 +442,7 @@ main() {
             log_ok "DeckShift installed!"
             echo ""
             echo "  ${C_DIM}Usage:${C_RESET}"
-            echo "  ${C_DIM}  Super+Shift+S${C_RESET}  → Enter Gaming Mode"
+            echo "  ${C_DIM}  Super+Shift+T${C_RESET}  → Enter Gaming Mode (Turbo)"
             echo "  ${C_DIM}  Super+Shift+R${C_RESET}  → Return to Desktop"
             echo "  ${C_DIM}  (inside Gamescope)${C_RESET} Super+Shift+R → Return to Desktop"
             echo ""
