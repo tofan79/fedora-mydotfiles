@@ -117,10 +117,23 @@ install_streaming_tools() {
 install_gpu_tools() {
     log_info "Installing GPU tuning tools..."
 
-    # lact = AMD GPU tool — tidak relevan untuk RTX 3050 (NVIDIA)
-    # Gunakan nvidia-settings untuk GPU tuning NVIDIA
+    # ryzenadj — tidak di repo resmi Fedora, via COPR shdwchn10/ryzenadj
+    if rpm -q ryzenadj &>/dev/null; then
+        log_ok "ryzenadj already installed."
+    else
+        log_info "Trying ryzenadj via COPR shdwchn10/ryzenadj..."
+        if sudo dnf copr enable shdwchn10/ryzenadj -y 2>/dev/null && \
+           sudo dnf install -y ryzenadj 2>/dev/null; then
+            log_ok "ryzenadj installed."
+            log_info "  Use: sudo ryzenadj -i (show info)"
+            log_info "  Tuning: sudo ryzenadj --stapm-limit=35000 --fast-limit=45000"
+        else
+            log_warn "ryzenadj COPR tidak tersedia — install manual:"
+            log_warn "  https://github.com/FlyGoat/RyzenAdj"
+        fi
+    fi
+
     try sudo dnf install -y \
-        ryzenadj \
         goverlay
 
     log_ok "GPU tools installed."

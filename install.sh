@@ -323,7 +323,6 @@ install_packages() {
         libwayland-client.i686 libwayland-server.i686 \
         libXtst.i686 \
         nss-mdns.i686 \
-        # tcp_wrappers-libs.i686 — dihapus dari Fedora 39+
         unixODBC.i686 \
         sane-backends-libs.i686 \
         ocl-icd.i686 \
