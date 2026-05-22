@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MangoWM Fedora 44 Installation Script
+# MangoWM Fedora 43 Installation Script
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,6 +17,11 @@ log_info() { echo -e "${CYAN}[INFO]${NC}  $*"; }
 log_ok()   { echo -e "${GREEN}[OK]${NC}   $*"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 log_err()  { echo -e "${RED}[ERROR]${NC} $*"; }
+
+try() {
+    local cmd="$*"
+    "$@" || { local rc=$?; log_warn "FAILED (exit ${rc}): ${cmd}"; return 0; }
+}
 
 if [[ -f "$LOG_FILE" ]]; then
     mv "$LOG_FILE" "${LOG_FILE}.old.$(date +%Y%m%d%H%M%S)"
@@ -230,6 +235,15 @@ add_repositories() {
         }
     fi
 
+    # EPEL (Extra Packages for Enterprise Linux) — needed for timeshift
+    if rpm -q epel-release &>/dev/null; then
+        log_ok "EPEL already installed. Skipping."
+    else
+        log_info "Installing EPEL repository..."
+        sudo dnf install -y epel-release 2>/dev/null || \
+            log_warn "EPEL unavailable — timeshift will be skipped"
+    fi
+
     # Terra repo - check if already installed
     if rpm -q terra-release &>/dev/null; then
         log_ok "Terra repository already installed. Skipping."
@@ -276,60 +290,16 @@ add_repositories() {
 }
 
 # ---------------------------------------------------
-show_repo_status() {
-    log_info "========================================="
-    log_info "  Repository Status Summary"
-    log_info "========================================="
-
-    echo ""
-    log_info "Official Fedora:"
-    rpm -q fedora-repos && log_ok "  fedora-repos" || log_warn "  fedora-repos: not installed"
-
-    echo ""
-    log_info "RPM Fusion:"
-    rpm -q rpmfusion-free-release && log_ok "  RPM Fusion Free" || log_warn "  RPM Fusion Free: not installed"
-    rpm -q rpmfusion-nonfree-release && log_ok "  RPM Fusion Non-Free" || log_warn "  RPM Fusion Non-Free: not installed"
-
-    echo ""
-    log_info "Terra (FyraLabs):"
-    rpm -q terra-release && log_ok "  Terra" || log_warn "  Terra: not installed"
-    rpm -q terra-release-multimedia && log_ok "  Terra Multimedia" || log_warn "  Terra Multimedia: not installed"
-
-    echo ""
-    log_info "COPR Repositories:"
-    if [[ -d /etc/copr.d ]]; then
-        for copr in /etc/copr.d/*; do
-            [[ -f "$copr" ]] && log_ok "  $(basename "$copr")"
-        done
-    else
-        log_warn "  No COPR repos configured"
-    fi
-
-    echo ""
-    log_info "Flatpak:"
-    command -v flatpak &>/dev/null && log_ok "  Flatpak installed" || log_warn "  Flatpak: not installed"
-    flatpak remote-list --system 2>/dev/null | grep -q flathub && log_ok "  Flathub configured" || log_warn "  Flathub: not configured"
-
-    echo ""
-    log_ok "========================================="
-    log_info "  All repos detected successfully"
-    log_info "========================================="
-}
-
-# ---------------------------------------------------
 install_packages() {
     log_info "Installing system packages (this may take a while)..."
 
-    # kernel-devel tidak di-pin ke uname -r — DNF + akmods handle sendiri
-    # dkms TIDAK diinstall — RPMFusion NVIDIA pakai akmods, bukan dkms
     sudo dnf install -y \
-        kernel-devel kernel-headers \
         gcc make acpid \
         libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig \
         git curl wget rsync xorg-x11-server-Xwayland
 
-    sudo dnf install -y linux-firmware wireless-regdb || log_warn "linux-firmware install failed"
-    sudo dnf install -y NetworkManager-wifi wpa_supplicant || log_warn "NetworkManager-wifi install failed"
+    try sudo dnf install -y linux-firmware wireless-regdb alsa-firmware sof-firmware
+    try sudo dnf install -y NetworkManager-wifi wpa_supplicant
     if ! sudo dnf install -y amd-gpu-firmware 2>/dev/null; then
         log_info "amd-gpu-firmware not available (Fedora 40+)"
     fi
@@ -338,23 +308,54 @@ install_packages() {
         mesa-vulkan-drivers mesa-dri-drivers mesa-libGLU \
         vulkan-loader vulkan-tools vulkan-validation-layers
 
-    sudo dnf install -y \
+    # Nobara-style 32-bit compatibility libraries
+    try sudo dnf install -y \
+        glibc.i686 libgcc.i686 libstdc++.i686 \
+        pulseaudio-libs.i686 \
+        openssl-libs.i686 \
+        flac-libs.i686 libogg.i686 libvorbis.i686 \
+        libsndfile.i686 libasyncns.i686 \
+        libexif.i686 \
+        libICE.i686 libSM.i686 \
+        libuuid.i686 \
+        libwayland-client.i686 libwayland-server.i686 \
+        libXtst.i686 \
+        nss-mdns.i686 \
+        tcp_wrappers-libs.i686 \
+        unixODBC.i686 \
+        sane-backends-libs.i686 \
+        ocl-icd.i686 \
+        json-c.i686 libaom.i686 libvpx.i686 \
+        llvm-libs.i686
+
+    try sudo dnf install -y \
         pipewire-utils pipewire-alsa pipewire-pulseaudio \
-        wireplumber playerctl pamixer || true
-    sudo dnf install -y pipewire-jack-audio-connection-kit 2>/dev/null || \
-    sudo dnf install -y jack-audio-connection-kit 2>/dev/null || true
+        wireplumber playerctl pamixer
+    try sudo dnf install -y pipewire-jack-audio-connection-kit || \
+    try sudo dnf install -y jack-audio-connection-kit
 
     sudo dnf install -y libva-utils vdpauinfo
 
     sudo dnf install -y qt5-qtwayland qt6-qtwayland
 
     sudo dnf install -y \
-        eza python3-pip pipx fastfetch zsh kitty mokutil flatpak git \
+        eza python3-pip pipx fastfetch fish kitty mokutil flatpak git \
         neovim starship bat fzf snapper zoxide \
-        bibata-cursor-theme btop docker docker-compose
+        bibata-cursor-theme btop podman podman-docker podman-compose
 
-    # JetBrains Mono + Nerd Fonts
-    sudo dnf install -y jetbrains-mono-fonts 2>/dev/null || true
+    try sudo dnf install -y timeshift
+
+    try sudo dnf install -y \
+        gcc-c++ cmake ninja-build meson \
+        autoconf automake libtool \
+        elfutils-libelf-devel kernel-devel kernel-headers
+
+    try sudo dnf install -y \
+        jetbrains-mono-fonts \
+        noto-fonts noto-emoji-fonts google-noto-color-emoji-fonts \
+        liberation-fonts mscore-fonts \
+        fira-code-fonts
+    # Nerd Fonts
     if command -v curl &>/dev/null; then
         mkdir -p ~/.local/share/fonts
         curl -fL "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/JetBrainsMono.zip" -o /tmp/JetBrainsMono.zip 2>/dev/null && \
@@ -366,6 +367,18 @@ install_packages() {
     sudo dnf install -y \
         asusctl power-profiles-daemon
 
+    # Printing stack (Nobara-style)
+    try sudo dnf install -y \
+        cups cups-filters cups-browsed cups-pk-helper cups-pdf \
+        ghostscript gutenprint gutenprint-cups \
+        hplip bluez-cups \
+        colord nss-mdns \
+        system-config-printer system-config-printer-udev \
+        foomatic foomatic-db-ppds \
+        a2ps enscript paps \
+        pnm2ppa ptouch-driver splix \
+        samba-client
+
     log_ok "All packages installed."
 }
 
@@ -373,31 +386,21 @@ install_packages() {
 install_multimedia() {
     log_info "Installing multimedia codecs..."
 
-    # RPMFusion tainted — libdvdcss dll
     if ! rpm -q rpmfusion-free-release-tainted &>/dev/null; then
-        sudo dnf install -y rpmfusion-free-release-tainted
+        try sudo dnf install -y rpmfusion-free-release-tainted
     fi
     if ! rpm -q libdvdcss &>/dev/null; then
-        sudo dnf install -y libdvdcss
+        try sudo dnf install -y libdvdcss
     fi
 
-    # Swap ffmpeg-free ke ffmpeg penuh (H.264/H.265/AAC support)
-    # libavcodec-freeworld sudah tidak ada di Fedora 44+
-    log_info "Swapping ffmpeg-free to full ffmpeg (RPMFusion)..."
-    sudo dnf swap ffmpeg-free ffmpeg --allowerasing -y || \
-        log_warn "ffmpeg swap gagal — mungkin sudah full ffmpeg atau conflict"
+    log_info "Swapping ffmpeg-free to full ffmpeg..."
+    try sudo dnf swap ffmpeg-free ffmpeg --allowerasing -y
 
-    # x264 x265 encoder
-    sudo dnf install -y x264 x265
+    try sudo dnf install -y x264 x265
 
-    # Update multimedia group dengan gstreamer components
     log_info "Installing multimedia and sound-and-video groups..."
-    # Use --with-optional to include more packages but avoid conflicts
-    sudo dnf group install -y --with-optional multimedia sound-and-video 2>/dev/null || \
-        sudo dnf group install -y multimedia sound-and-video 2>/dev/null || \
-        log_warn "Group install failed"
-    sudo dnf group update multimedia -y --setopt="install_weak_deps=False" \
-        --exclude=PackageKit-gstreamer-plugin 2>/dev/null || true
+    try sudo dnf group install -y --with-optional multimedia sound-and-video || \
+    try sudo dnf group install -y multimedia sound-and-video
 
     log_warn "Mesa freeworld skipped - dangerous!"
     log_info "Manual: sudo dnf install mesa-va-drivers-freeworld"
@@ -422,35 +425,58 @@ install_nvidia() {
         [Nn]*) log_warn "Skipping NVIDIA."; return 0 ;;
     esac
 
-    log_info "Installing NVIDIA drivers..."
-    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda
+    log_info "Installing NVIDIA drivers (setara Nobara)..."
+
+    # Core: kernel module (akmod) + driver + CUDA
+    sudo dnf install -y \
+        akmod-nvidia \
+        xorg-x11-drv-nvidia-cuda
 
     while true; do sudo -v; sleep 60; done &
     sudo_refresher_pid=$!
 
-    log_info "Installing NVIDIA Wayland + VAAPI..."
-    if sudo dnf install -y egl-wayland 2>/dev/null; then
-        log_ok "egl-wayland installed (Wayland EGL support)"
-    else
-        log_warn "egl-wayland install failed"
-    fi
+    # Nobara-equivalent NVIDIA library stack
+    log_info "Installing NVIDIA library stack..."
+    try sudo dnf install -y \
+        nvidia-driver-libs \
+        nvidia-driver-libs.i686 \
+        nvidia-driver-cuda-libs \
+        nvidia-driver-cuda-libs.i686 \
+        libnvidia-ml \
+        libnvidia-ml.i686 \
+        libnvidia-fbc \
+        nvidia-libXNVCtrl \
+        libnvidia-cfg \
+        nvidia-modprobe \
+        nvidia-persistenced \
+        nvidia-settings
 
-    # Install VAAPI drivers (hardware video decode/encode)
-    if sudo dnf install -y libva-nvidia-driver 2>/dev/null; then
-        log_ok "libva-nvidia-driver installed"
-    elif sudo dnf install -y nvidia-vaapi-driver 2>/dev/null; then
+    # Wayland EGL
+    log_info "Installing NVIDIA Wayland + VAAPI..."
+    try sudo dnf install -y egl-wayland
+
+    # VAAPI hardware decode/encode
+    if try sudo dnf install -y libva-nvidia-driver; then
+        log_ok "libva-nvidia-driver installed (HW decode)"
+    elif try sudo dnf install -y nvidia-vaapi-driver; then
         log_ok "nvidia-vaapi-driver installed"
     else
-        log_warn "VAAPI not available - using software decode"
+        log_warn "VAAPI not available — software decode fallback"
     fi
 
-    log_info "Building kernel module..."
+    # DKMS build deps
+    try sudo dnf install -y \
+        gcc make perl \
+        elfutils-libelf-devel \
+        kernel-devel
+
+    log_info "Building kernel module via akmods..."
     sudo akmods --force
     log_info "Rebuilding initramfs..."
     sudo dracut --force
     log_ok "initramfs rebuilt."
 
-    log_info "Waiting for NVIDIA module..."
+    log_info "Waiting for NVIDIA module build..."
     local wait_count=0
     while pgrep -fa "akmods|rpmbuild" >/dev/null 2>&1; do
         log_info "Building... (${wait_count}s)"
@@ -461,7 +487,7 @@ install_nvidia() {
 
     wait_count=0
     until modinfo nvidia &>/dev/null 2>&1; do
-        log_info "Waiting... (${wait_count}s)"
+        log_info "Waiting module... (${wait_count}s)"
         sleep 5
         (( wait_count > 300 )) && { log_warn "Timeout"; break; }
     done
@@ -508,9 +534,8 @@ PRIMEEOF
 configure_firewalld() {
     log_info "Configuring firewalld..."
 
-    # Check if firewalld is installed
     if ! rpm -q firewalld &>/dev/null; then
-        sudo dnf install -y firewalld
+        try sudo dnf install -y firewalld
     fi
 
     # Ensure firewalld is enabled and active
@@ -569,26 +594,6 @@ configure_asusctl() {
 }
 
 # ---------------------------------------------------
-install_rog_control_center() {
-    log_info "Installing ROG Control Center..."
-
-    if ! rpm -q terra-release &>/dev/null; then
-        log_warn "Terra repo not enabled"
-    fi
-
-    if rpm -q asusctl-rog-gui &>/dev/null; then
-        log_ok "ROG Control Center already installed. Skipping."
-        return 0
-    fi
-
-    sudo dnf install -y asusctl-rog-gui || {
-        log_warn "Install failed - manual: sudo dnf install asusctl-rog-gui"
-        return 1
-    }
-
-    log_ok "ROG Control Center installed."
-}
-
 # ---------------------------------------------------
 install_snapper() {
     log_info "Configuring snapper for BTRFS snapshots..."
@@ -739,11 +744,6 @@ install_sddm() {
     if [[ -f /etc/sddm.conf.d/10-mango.conf ]]; then
         log_ok "SDDM already configured. Skipping."
     else
-        # SDDM Config:
-        # - Auto-login (no need to enter password)
-        # - Wayland enable (cursor works properly)
-        # - Default session: MangoWM
-        # - Username pre-filled, user input password
         sudo tee /etc/sddm.conf.d/10-mango.conf > /dev/null << SDDMEOF
 [General]
 InputMethod=none
@@ -754,12 +754,12 @@ DefaultUser=$current_user
 Current=
 
 [Wayland]
-Enable=true
+Enable=false
 
 [X11]
-Enable=false
+Enable=true
 SDDMEOF
-        log_ok "SDDM configured - username: $current_user, password required"
+        log_ok "SDDM configured — username: $current_user"
     fi
 
     if systemctl is-enabled sddm.service &>/dev/null 2>&1; then
@@ -787,33 +787,6 @@ SDDMEOF
 }
 
 # ---------------------------------------------------
-install_tela_icon_theme() {
-    log_info "Checking for Tela icon theme..."
-
-    # Check if already installed
-    if ls ~/.local/share/icons/Tela* &>/dev/null 2>&1 || \
-       ls /usr/share/icons/Tela* &>/dev/null 2>&1; then
-        log_ok "Tela icon theme already installed. Skipping."
-        return 0
-    fi
-
-    # Check if git is available
-    if ! command -v git &>/dev/null; then
-        log_warn "git not installed. Skipping Tela icon theme."
-        return 0
-    fi
-
-    local temp_dir="/tmp/tela-icon-theme"
-    rm -rf "$temp_dir"
-    if git clone --depth 1 https://github.com/vinceliuice/Tela-icon-theme.git "$temp_dir" 2>/dev/null; then
-        (cd "$temp_dir" && ./install.sh -a) 2>/dev/null || log_warn "Tela install script failed"
-        rm -rf "$temp_dir"
-        log_ok "Tela icon theme installed."
-    else
-        log_warn "Failed to clone Tela icon theme. Skipping."
-    fi
-}
-
 # ---------------------------------------------------
 copy_dotfiles() {
     log_info "Copying dotfiles to ~/.config/..."
@@ -877,147 +850,63 @@ copy_wallpapers() {
 }
 
 # ---------------------------------------------------
-install_zsh() {
-    log_info "Setting up ZSH with Powerlevel10k..."
+copy_docker_db() {
+    local src="${SCRIPT_DIR}/docker-db"
+    local dst="${HOME}/Projects/docker-db"
+    if [[ ! -d "$src" ]]; then
+        log_warn "docker-db directory not found. Skipping."
+        return 0
+    fi
+    mkdir -p "$dst"
+    cp -r "${src}"/* "$dst/"
+    log_ok "docker-db copied to ${dst}"
+}
 
-    if ! command -v zsh &>/dev/null; then
-        log_warn "ZSH not installed. Skipping."
+# ---------------------------------------------------
+setup_fish() {
+    log_info "Setting up Fish shell..."
+
+    if ! command -v fish &>/dev/null; then
+        log_warn "Fish not installed. Skipping."
         return 0
     fi
 
-    local zshrc="$HOME/.zshrc"
-    local zsh_custom="$HOME/.oh-my-zsh/custom"
-    local p10k_theme="$HOME/.oh-my-zsh/themes/powerlevel10k.zsh-theme"
+    log_ok "Fish already installed."
 
-    # Install oh-my-zsh if not exists
-    if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-        log_info "Installing oh-my-zsh..."
-        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended || {
-            log_warn "oh-my-zsh install failed - manual install"
-            return 0
-        }
+    mkdir -p ~/.config/fish
+
+    if [[ -f ~/.config/fish/config.fish ]]; then
+        cp ~/.config/fish/config.fish ~/.config/fish/config.fish.bak.$(date +%Y%m%d) 2>/dev/null || true
+    fi
+
+    local fish_path
+    fish_path=$(command -v fish)
+    if [[ "$SHELL" != "$fish_path" ]]; then
+        sudo chsh -s "$fish_path" "$USER" || log_warn "chsh failed — manual: chsh -s $fish_path"
+        log_ok "Fish set as default shell."
     else
-        log_ok "oh-my-zsh already installed."
+        log_ok "Fish already default shell."
+    fi
+}
+
+setup_mise() {
+    log_info "Installing mise..."
+
+    if command -v mise &>/dev/null; then
+        log_ok "mise already installed."
+        return 0
     fi
 
-    # Install Powerlevel10k theme
-    if [[ ! -d "$zsh_custom/themes/powerlevel10k" ]]; then
-        git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$zsh_custom/themes/powerlevel10k" 2>/dev/null || \
-            log_warn "powerlevel10k install failed"
-    else
-        log_ok "powerlevel10k already installed."
+    if ! command -v curl &>/dev/null; then
+        log_warn "curl not installed. Skipping mise."
+        return 0
     fi
 
-    # Ensure custom plugins directory exists
-    mkdir -p "$zsh_custom/plugins"
-
-    # zsh-autosuggestions (like fish auto-suggestions)
-    if [[ ! -d "$zsh_custom/plugins/zsh-autosuggestions" ]]; then
-        git clone https://github.com/zsh-users/zsh-autosuggestions "$zsh_custom/plugins/zsh-autosuggestions" 2>/dev/null || \
-            log_warn "zsh-autosuggestions failed"
-    fi
-
-    # zsh-syntax-highlighting (like fish syntax highlighting)
-    if [[ ! -d "$zsh_custom/plugins/zsh-syntax-highlighting" ]]; then
-        git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$zsh_custom/plugins/zsh-syntax-highlighting" 2>/dev/null || \
-            log_warn "zsh-syntax-highlighting failed"
-    fi
-
-    # fzf - interactive fuzzy finder (for history, files, etc)
-    if [[ ! -d "$zsh_custom/plugins/fzf" ]]; then
-        git clone --depth 1 https://github.com/junegunn/fzf-git.sh "$zsh_custom/plugins/fzf" 2>/dev/null || \
-            log_warn "fzf plugin failed"
-    fi
-
-    # zsh-navigation-tools (like fish navigation)
-    if [[ ! -d "$zsh_custom/plugins/zsh-navigation-tools" ]]; then
-        git clone https://github.com/zsh-users/zsh-navigation-tools "$zsh_custom/plugins/zsh-navigation-tools" 2>/dev/null || \
-            log_warn "zsh-navigation-tools failed"
-    fi
-
-    # Configure zshrc
-    # Backup existing if different from what we would create
-    if [[ -f "$zshrc" ]] && ! grep -q "oh-my-zsh" "$zshrc" 2>/dev/null; then
-        cp "$zshrc" "${zshrc}.bak.$(date +%Y%m%d)"
-    fi
-
-    # Create new zshrc
-    cat > "$zshrc" << 'ZSHEOF'
-export ZSH="$HOME/.oh-my-zsh"
-
-# Powerlevel10k theme
-ZSH_THEME="powerlevel10k/powerlevel10k"
-
-# Enable plugins
-plugins=(
-    git
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-    fzf
-)
-
-source $ZSH/oh-my-zsh.sh
-
-# Eza aliases (like fish)
-alias ls='eza --icons'
-alias ll='eza -lah --icons'
-alias la='eza -a --icons'
-alias lt='eza --tree --icons'
-alias cat='bat --style=plain'
-
-# Navigation
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-
-# Apps aliases (from fish config)
-alias op='opencode'
-alias cc='claude'
-alias y='yazi'
-alias nv='nvim'
-
-# Docker shortcuts
-alias d='docker'
-alias dc='docker compose'
-alias dps='docker ps'
-alias dpa='docker ps -a'
-alias di='docker images'
-alias dex='docker exec -it'
-alias dlog='docker logs -f'
-
-# System
-alias update='sudo dnf update'
-alias upgrade='sudo dnf upgrade'
-alias clean='sudo dnf autoremove && sudo dnf clean all'
-
-# NVIDIA: prime-run <app>
-# Steam: prime-run %command%
-
-# FZF - interactive search (Ctrl+R for history, Ctrl+T for files)
-export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
-export FZF_CTRL_R_OPTS='--height 40% --layout=reverse --border'
-export FZF_CTRL_T_OPTS='--height 40% --layout=reverse --border'
-
-# zoxide (smart cd)
-if command -v zoxide &>/dev/null; then
-    eval "$(zoxide init zsh)"
-fi
-ZSHEOF
-
-    log_ok "ZSH configured with Powerlevel10k + plugins:"
-    log_info "  - Powerlevel10k theme"
-    log_info "  - zsh-autosuggestions (auto-complete)"
-    log_info "  - zsh-syntax-highlighting (syntax highlight)"
-    log_info "  - fzf (interactive search: Ctrl+R history, Ctrl+T files)"
-    log_info "  - zsh-navigation-tools (optional, clone manual kalo mau)"
-    log_info "  - zoxide (smart cd)"
-    log_info "  - Docker/Docker Compose shortcuts"
-    log_info "  - Eza aliases (ls, ll, tree, etc)"
-
-    sudo chsh -s /bin/zsh "$USER" || log_warn "chsh failed - manual: sudo chsh -s /bin/zsh $USER"
-    log_ok "ZSH set as default shell."
-
-    log_info "After login, run: p10k configure"
+    curl https://mise.run | sh 2>/dev/null || {
+        log_warn "mise install failed"
+        return 0
+    }
+    log_ok "mise installed."
 }
 
 # ---------------------------------------------------
@@ -1093,52 +982,30 @@ cleanup() {
 # ---------------------------------------------------
 main() {
     preflight_checks
-    enable_multilib      # Enable 32-bit support BEFORE installing packages
+    enable_multilib
     configure_dnf
     add_repositories
-    show_repo_status     # Show all detected repos
     install_packages
     install_multimedia
-    install_nvidia          # include setup_prime_run
+    install_nvidia
     configure_firewalld
     configure_asusctl
-    install_rog_control_center
     install_snapper
-    install_mangowm         # include install_sddm
-    # Apps & gaming: jalankan apps.sh dan gaming.sh setelah masuk desktop
-    install_tela_icon_theme
+    install_mangowm
     copy_dotfiles
     copy_wallpapers
-    # set_shell              # Removed - handled by install_zsh
-    # configure_fish        # Removed - using zsh instead
-    install_zsh          # ZSH with oh-my-zsh + plugins
-    set_kitty_default   # Set Kitty as default terminal
+    copy_docker_db
+    setup_fish
+    setup_mise
+    set_kitty_default
     create_user_folders
     cleanup
 
     echo ""
-    log_ok "========================================"
-    log_ok " Installation complete!"
-    log_ok "========================================"
+    log_ok "Installation complete!"
     echo ""
-    log_info "Log tersimpan di: ${LOG_FILE}"
-    echo ""
-    log_info "Setelah reboot:"
-    log_info "  - Langsung ke SDDM login screen (bukan TTY)"
-    log_info "  - Pilih session: MangoWM (mango.desktop)"
-    echo ""
-    log_info "ASUS TUF:"
-    log_info "  Fan profile  : asusctl profile -P Quiet|Balanced|Performance"
-    log_info "  Battery limit: asusctl -c 80"
-    echo ""
-    log_info "NVIDIA (AMD iGPU default, NVIDIA on-demand):"
-    log_info "  Verifikasi   : nvidia-smi"
-    log_info "  Jalankan app : prime-run <app>"
-    log_info "  Steam        : prime-run %command%"
-    echo ""
-    log_info "BTRFS Snapshots:"
-    log_info "  Lihat        : snapper list"
-    log_info "  Rollback     : snapper undochange <pre>..<post>"
+    log_info "Setelah reboot: SDDM → MangoWM"
+    log_info "Kemudian jalankan: ./apps.sh && ./gaming.sh"
     echo ""
     log_info "Reboot: sudo reboot"
     echo ""

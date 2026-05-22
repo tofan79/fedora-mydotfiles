@@ -1,0 +1,524 @@
+{
+  "cheatsheetData": [
+    {
+      "title": "Mango WM — Core",
+      "binds": [
+        {
+          "keys": "Super + r",
+          "desc": "Reload config"
+        },
+        {
+          "keys": "Super + q",
+          "desc": "Close window"
+        },
+        {
+          "keys": "Super + m",
+          "desc": "Quit compositor"
+        },
+        {
+          "keys": "Super + Esc",
+          "desc": "Session Menu"
+        },
+        {
+          "keys": "Super + Space",
+          "desc": "Launcher"
+        },
+        {
+          "keys": "Super + Ctrl + Space",
+          "desc": "Wallpaper Panel"
+        }
+      ]
+    },
+    {
+      "title": "Launcher & Apps",
+      "binds": [
+        {
+          "keys": "Super + Enter",
+          "desc": "Run: kitty"
+        },
+        {
+          "keys": "Super + /",
+          "desc": "Run: kitty -T btop -e btop"
+        }
+      ]
+    },
+    {
+      "title": "Noctalia — System Controls",
+      "binds": [
+        {
+          "keys": "Super + Alt + Space",
+          "desc": "Control Center"
+        },
+        {
+          "keys": "Super + Alt + ,",
+          "desc": "System Monitor"
+        },
+        {
+          "keys": "Super + Alt + s",
+          "desc": "Settings"
+        },
+        {
+          "keys": "Super + Alt + n",
+          "desc": "Toggle Night Light"
+        },
+        {
+          "keys": "Super + Alt + d",
+          "desc": "Do Not Disturb"
+        },
+        {
+          "keys": "Super + Alt + h",
+          "desc": "Notification History"
+        },
+        {
+          "keys": "Super + Alt + c",
+          "desc": "Clear Notifications"
+        },
+        {
+          "keys": "Super + Alt + e",
+          "desc": "Emoji Picker"
+        },
+        {
+          "keys": "Super + Alt + v",
+          "desc": "Run: qs -c noctalia-shell ipc call plugin:clipper toggle"
+        },
+        {
+          "keys": "Super + Alt + k",
+          "desc": "Calendar"
+        },
+        {
+          "keys": "Super + K",
+          "desc": "Run: qs -c noctalia-shell ipc call plugin:keybind-cheatsheet toggle"
+        }
+      ]
+    },
+    {
+      "title": "Session & Lock",
+      "binds": [
+        {
+          "keys": "Super + Alt + l",
+          "desc": "Lock Screen"
+        },
+        {
+          "keys": "Super + Ctrl + Alt + l",
+          "desc": "sessionMenu: lockAndSuspend"
+        }
+      ]
+    },
+    {
+      "title": "Media Keys (Hardware)",
+      "binds": [
+        {
+          "keys": "Vol Up",
+          "desc": "Volume Up"
+        },
+        {
+          "keys": "Vol Down",
+          "desc": "Volume Down"
+        },
+        {
+          "keys": "Mute",
+          "desc": "Mute Output"
+        },
+        {
+          "keys": "Bright Up",
+          "desc": "Brightness Up"
+        },
+        {
+          "keys": "Bright Down",
+          "desc": "Brightness Down"
+        },
+        {
+          "keys": "Play",
+          "desc": "Play / Pause"
+        },
+        {
+          "keys": "Next",
+          "desc": "Next Track"
+        },
+        {
+          "keys": "Prev",
+          "desc": "Previous Track"
+        },
+        {
+          "keys": "Mic Mute",
+          "desc": "Mute Input"
+        },
+        {
+          "keys": "XF86Calculator",
+          "desc": "Run: gnome-calculator"
+        }
+      ]
+    },
+    {
+      "title": "Window Focus (Super + Arrows)",
+      "binds": [
+        {
+          "keys": "Super + left",
+          "desc": "Focus LEFT"
+        },
+        {
+          "keys": "Super + right",
+          "desc": "Focus RIGHT"
+        },
+        {
+          "keys": "Super + up",
+          "desc": "Focus UP"
+        },
+        {
+          "keys": "Super + down",
+          "desc": "Focus DOWN"
+        }
+      ]
+    },
+    {
+      "title": "Window Movement (Super + Shift + Arrows)",
+      "binds": [
+        {
+          "keys": "Super + Shift + left",
+          "desc": "Swap LEFT"
+        },
+        {
+          "keys": "Super + Shift + right",
+          "desc": "Swap RIGHT"
+        },
+        {
+          "keys": "Super + Shift + up",
+          "desc": "Swap UP"
+        },
+        {
+          "keys": "Super + Shift + down",
+          "desc": "Swap DOWN"
+        },
+        {
+          "keys": "Super + Ctrl + left",
+          "desc": "Viewtoleft"
+        },
+        {
+          "keys": "Super + Ctrl + right",
+          "desc": "Viewtoright"
+        }
+      ]
+    },
+    {
+      "title": "Window States",
+      "binds": [
+        {
+          "keys": "Super + f",
+          "desc": "Toggle fullscreen"
+        },
+        {
+          "keys": "Super + Shift + f",
+          "desc": "Maximize"
+        },
+        {
+          "keys": "Super + Shift + t",
+          "desc": "Toggle floating"
+        },
+        {
+          "keys": "Super + Shift + o",
+          "desc": "Toggle overview"
+        }
+      ]
+    },
+    {
+      "title": "Window Cycling",
+      "binds": [
+        {
+          "keys": "Alt + Tab",
+          "desc": "Focusstack"
+        }
+      ]
+    },
+    {
+      "title": "Scratchpad",
+      "binds": [
+        {
+          "keys": "Super + s",
+          "desc": "Toggle Scratchpad"
+        },
+        {
+          "keys": "Super + Shift + s",
+          "desc": "Minimized"
+        },
+        {
+          "keys": "Super + Shift + Ctrl + s",
+          "desc": "Restore Minimized"
+        }
+      ]
+    },
+    {
+      "title": "Layout Controls",
+      "binds": [
+        {
+          "keys": "Super + Ctrl + l",
+          "desc": "Switch layout"
+        }
+      ]
+    },
+    {
+      "title": "Gaps Controls",
+      "binds": [
+        {
+          "keys": "Shift + Alt + X",
+          "desc": "Incgaps"
+        },
+        {
+          "keys": "Shift + Alt + Z",
+          "desc": "Incgaps"
+        },
+        {
+          "keys": "Shift + Alt + R",
+          "desc": "Togglegaps"
+        }
+      ]
+    },
+    {
+      "title": "Screen Toolkit (Noctalia Plugin)",
+      "binds": [
+        {
+          "keys": "Super + Shift + a",
+          "desc": "Run: qs -c noctalia-shell ipc call plugin:screen-toolkit annotate"
+        },
+        {
+          "keys": "print",
+          "desc": "Run: qs -c noctalia-shell ipc call plugin:screen-toolkit toggle"
+        }
+      ]
+    },
+    {
+      "title": "Workspace Navigation (Super + 1-9)",
+      "binds": [
+        {
+          "keys": "Super + 1",
+          "desc": "View"
+        },
+        {
+          "keys": "Super + 2",
+          "desc": "View"
+        },
+        {
+          "keys": "Super + 3",
+          "desc": "View"
+        },
+        {
+          "keys": "Super + 4",
+          "desc": "View"
+        },
+        {
+          "keys": "Super + 5",
+          "desc": "View"
+        },
+        {
+          "keys": "Super + 6",
+          "desc": "View"
+        },
+        {
+          "keys": "Super + 7",
+          "desc": "View"
+        },
+        {
+          "keys": "Super + 8",
+          "desc": "View"
+        },
+        {
+          "keys": "Super + 9",
+          "desc": "View"
+        }
+      ]
+    },
+    {
+      "title": "Move Window to Workspace (Super + Shift + 1-9)",
+      "binds": [
+        {
+          "keys": "Super + Shift + 1",
+          "desc": "Tag"
+        },
+        {
+          "keys": "Super + Shift + 2",
+          "desc": "Tag"
+        },
+        {
+          "keys": "Super + Shift + 3",
+          "desc": "Tag"
+        },
+        {
+          "keys": "Super + Shift + 4",
+          "desc": "Tag"
+        },
+        {
+          "keys": "Super + Shift + 5",
+          "desc": "Tag"
+        },
+        {
+          "keys": "Super + Shift + 6",
+          "desc": "Tag"
+        },
+        {
+          "keys": "Super + Shift + 7",
+          "desc": "Tag"
+        },
+        {
+          "keys": "Super + Shift + 8",
+          "desc": "Tag"
+        },
+        {
+          "keys": "Super + Shift + 9",
+          "desc": "Tag"
+        }
+      ]
+    },
+    {
+      "title": "Multi-Monitor",
+      "binds": [
+        {
+          "keys": "Super + Ctrl + Alt + Tab",
+          "desc": "Focusstack"
+        },
+        {
+          "keys": "Super + Ctrl + Alt + left",
+          "desc": "Focus Monitor LEFT"
+        },
+        {
+          "keys": "Super + Ctrl + Alt + right",
+          "desc": "Focus Monitor RIGHT"
+        },
+        {
+          "keys": "Super + Ctrl + Alt + up",
+          "desc": "Focus Monitor UP"
+        },
+        {
+          "keys": "Super + Ctrl + Alt + down",
+          "desc": "Focus Monitor DOWN"
+        },
+        {
+          "keys": "Super + Shift + Ctrl + Alt + left",
+          "desc": "Send to Monitor LEFT"
+        },
+        {
+          "keys": "Super + Shift + Ctrl + Alt + right",
+          "desc": "Send to Monitor RIGHT"
+        },
+        {
+          "keys": "Super + Shift + Ctrl + Alt + up",
+          "desc": "Send to Monitor UP"
+        },
+        {
+          "keys": "Super + Shift + Ctrl + Alt + down",
+          "desc": "Send to Monitor DOWN"
+        }
+      ]
+    },
+    {
+      "title": "Resize Windows",
+      "binds": [
+        {
+          "keys": "Ctrl + Alt + up",
+          "desc": "Resizewin"
+        },
+        {
+          "keys": "Ctrl + Alt + down",
+          "desc": "Resizewin"
+        },
+        {
+          "keys": "Ctrl + Alt + left",
+          "desc": "Resizewin"
+        },
+        {
+          "keys": "Ctrl + Alt + right",
+          "desc": "Resizewin"
+        }
+      ]
+    },
+    {
+      "title": "App Launchers",
+      "binds": [
+        {
+          "keys": "Super + e",
+          "desc": "Run: nautilus"
+        },
+        {
+          "keys": "Super + z",
+          "desc": "Run: zen-browser"
+        },
+        {
+          "keys": "Super + b",
+          "desc": "Run: brave-browser"
+        },
+        {
+          "keys": "Super + n",
+          "desc": "Run: zed"
+        },
+        {
+          "keys": "Super + h",
+          "desc": "Run: localsend"
+        },
+        {
+          "keys": "Super + t",
+          "desc": "Run: Telegram"
+        }
+      ]
+    },
+    {
+      "title": "Mouse Bindings",
+      "binds": [
+        {
+          "keys": "Super + Left Click",
+          "desc": "Moveresize"
+        },
+        {
+          "keys": "Super + Right Click",
+          "desc": "Moveresize"
+        }
+      ]
+    },
+    {
+      "title": "Scroll Bindings",
+      "binds": [
+        {
+          "keys": "Super + Scroll Up",
+          "desc": "Viewtoleft Have Client"
+        },
+        {
+          "keys": "Super + Scroll Down",
+          "desc": "Viewtoright Have Client"
+        }
+      ]
+    }
+  ],
+  "detectedCompositor": "mango",
+  "windowWidth": 1500,
+  "windowHeight": 850,
+  "autoHeight": true,
+  "columnCount": 3,
+  "modKeyVariable": "$mod",
+  "hyprlandConfigPath": "~/.config/hypr/hyprland.conf",
+  "hyprlandLuaConfigPath": "~/.config/hypr/hyprland.lua",
+  "hyprlandParserMode": "auto",
+  "niriConfigPath": "~/.config/niri/config.kdl",
+  "mangoConfigPath": "~/.config/mango/config.conf",
+  "mergeSequentialBinds": true,
+  "showUndescribedBinds": true,
+  "splitLargeWorkspaceCategory": true,
+  "workspaceSplitThreshold": 12,
+  "keyColorAlt": "#FF6B6B",
+  "keyColorXF86": "#4ECDC4",
+  "keyColorPrint": "#95E1D3",
+  "keyColorNumeric": "#A8DADC",
+  "keyColorMouse": "#F38181",
+  "keyColorSuper": "",
+  "keyColorCtrl": "",
+  "keyColorShift": "",
+  "keyColorDefault": "#6C757D",
+  "keyLabelColor": "#FFFFFF",
+  "keyTextSuper": "",
+  "keyTextCtrl": "",
+  "keyTextShift": "",
+  "keyTextAlt": "",
+  "keyTextXF86": "",
+  "keyTextPrint": "",
+  "keyTextNumeric": "",
+  "keyTextMouse": "",
+  "keyTextDefault": "",
+  "descriptionTextColor": "#E0E0E0",
+  "bindOverrides": {}
+}

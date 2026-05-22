@@ -7,6 +7,9 @@ systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP 
 
 # Set GTK dark mode preference
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+gsettings set org.gnome.desktop.interface accent-color 'slate'
+gsettings set org.gnome.desktop.interface icon-theme 'Tela-nord-dark'
+gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Ice'
 
 # Clipboard history untuk Clipper plugin
 wl-paste --watch cliphist store &

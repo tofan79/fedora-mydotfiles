@@ -1,107 +1,88 @@
 #!/usr/bin/env bash
-#
-# apps.sh — Install aplikasi untuk MangoWM / Fedora setup
-# Jalankan setelah masuk desktop dan install.sh selesai
-#
-# Usage:
-#   chmod +x apps.sh
-#   ./apps.sh
-#
-
+# apps.sh — Daily apps untuk Fedora + MangoWM
+# Jalankan setelah install.sh && reboot
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="${SCRIPT_DIR}/apps.log"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 log_info() { echo -e "${CYAN}[INFO]${NC}  $*"; }
 log_ok()   { echo -e "${GREEN}[OK]${NC}   $*"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 log_err()  { echo -e "${RED}[ERROR]${NC} $*"; }
 
+try() { local cmd="$*"; "$@" || { local rc=$?; log_warn "FAILED (exit ${rc}): ${cmd}"; return 0; }; }
+
+if [[ -f "$LOG_FILE" ]]; then mv "$LOG_FILE" "${LOG_FILE}.old.$(date +%Y%m%d%H%M%S)"; fi
 exec > >(tee -a "$LOG_FILE") 2>&1
 log_info "Logging to: ${LOG_FILE}"
-trap 'log_err "Failed at line ${LINENO}: ${BASH_COMMAND}"' ERR
+trap 'log_err "UNEXPECTED at line ${LINENO}: ${BASH_COMMAND}"' ERR
 
 # ---------------------------------------------------
-install_apps() {
-    log_info "Installing applications..."
+install_core() {
+    log_info "Installing core apps..."
 
-    # Core apps - dengan error handling untuk package unavailable
-    sudo dnf install -y \
+    try sudo dnf install -y --skip-unavailable \
         nautilus nautilus-extensions python3-nautilus \
         yazi mpv imv \
-        gnome-disk-utility PackageKit \
+        gnome-disk-utility \
         pavucontrol \
         telegram-desktop \
         tesseract tesseract-langpack-eng \
-        ImageMagick zbar-tools translate-shell ffmpeg \
-        python3-gobject xdg-desktop-portal \
-        libmtp gvfs-mtp || {
-        log_warn "Some packages failed - retrying with --skip-unavailable..."
-        sudo dnf install -y --skip-unavailable \
-            nautilus nautilus-extensions \
-            yazi mpv imv \
-            gnome-disk-utility gnome-software \
-            pavucontrol \
-            telegram-desktop \
-            tesseract tesseract-langpack-eng \
-            ImageMagick zbar-tools translate-shell ffmpeg \
-            python3-gobject xdg-desktop-portal \
-            libmtp gvfs-mtp || true
-    }
-
-    # Brave browser - dari official repo
-    if ! rpm -q brave-browser &>/dev/null; then
-        log_info "Adding Brave browser repository..."
-        sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo 2>/dev/null || {
-            sudo curl -fsSLo /etc/yum.repos.d/brave-browser.repo https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
-        }
-        sudo rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-browser.asc 2>/dev/null || true
-        log_info "Installing Brave browser..."
-        sudo dnf install -y brave-browser 2>/dev/null || log_warn "Brave install failed"
-    else
-        log_ok "Brave browser already installed."
-    fi
+        ImageMagick zbar-tools translate-shell \
+        libmtp gvfs-mtp \
+        xdg-desktop-portal-gtk \
+        python3-gobject
 
     log_ok "Core apps installed."
 }
 
 # ---------------------------------------------------
-install_flatpak() {
-    if ! command -v flatpak &>/dev/null; then
-        log_info "Installing flatpak..."
-        sudo dnf install -y flatpak
-    else
-        log_ok "Flatpak already installed."
+install_browser() {
+    if rpm -q brave-browser &>/dev/null; then
+        log_ok "Brave browser already installed."
+        return 0
     fi
 
-    # Tambah Flathub system-wide kalau belum ada
-    if ! flatpak remote-list --system 2>/dev/null | grep -q flathub; then
-        log_info "Adding Flathub repository (system-wide)..."
-        sudo flatpak remote-add --if-not-exists flathub \
-            https://flathub.org/repo/flathub.flatpakrepo || {
-            log_warn "Flathub add failed"
-            return 0
-        }
-        log_ok "Flathub added (system-wide)."
-    else
-        log_ok "Flathub already configured (system-wide)."
+    log_info "Installing Brave browser..."
+    try sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo || \
+        try sudo curl -fsSLo /etc/yum.repos.d/brave-browser.repo https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+    sudo rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-browser.asc 2>/dev/null || true
+    try sudo dnf install -y brave-browser
+    log_ok "Brave browser installed."
+}
+
+# ---------------------------------------------------
+install_dev() {
+    log_info "Installing dev tools..."
+
+    try sudo dnf install -y --skip-unavailable \
+        git-lfs \
+        vim tmux \
+        jq yq htop \
+        ripgrep fd-find \
+        tree ncdu httpie \
+        openssl openssh-server \
+        net-tools bind-utils \
+        whois traceroute mtr socat nmap \
+        unzip zip p7zip \
+        ShellCheck \
+        valgrind strace ltrace file
+
+    # Enable podman socket for docker-compose compatibility
+    if command -v podman &>/dev/null; then
+        systemctl --user enable --now podman.socket 2>/dev/null || true
+        log_ok "podman socket enabled"
     fi
 
-    log_ok "Flatpak + Flathub siap. Install apps manual: flatpak install flathub <app-id>"
+    log_ok "Dev tools installed."
 }
 
 # ---------------------------------------------------
 install_nautilus_localsend() {
     local ext_dir="${HOME}/.local/share/nautilus-python/extensions"
     local ext_file="${ext_dir}/localsend.py"
-
     if [[ -f "$ext_file" ]]; then
         log_ok "Nautilus LocalSend extension already exists."
         return 0
@@ -110,77 +91,51 @@ install_nautilus_localsend() {
     log_info "Installing Nautilus LocalSend extension..."
     mkdir -p "$ext_dir"
 
-    cat > "$ext_file" << 'NAUTEXTEOF'
-import os
+    cat > "$ext_file" << 'PYEOF'
 import shutil
-
 from gi import require_version
-
 require_version("Nautilus", "4.1")
-
 from gi.repository import GObject, Gio, Nautilus
-
 
 class SendViaLocalSendAction(GObject.GObject, Nautilus.MenuProvider):
     def _launch_localsend(self, paths):
-        command = self._resolve_command()
-        if not command:
+        cmd = self._resolve_command()
+        if not cmd:
             return
-
-        if command[-1] == "@@":
-            command = command + paths + ["@@"]
+        if cmd[-1] == "@@":
+            cmd = cmd + paths + ["@@"]
         else:
-            command = command + paths
-
-        Gio.Subprocess.new(command, Gio.SubprocessFlags.NONE)
+            cmd = cmd + paths
+        Gio.Subprocess.new(cmd, Gio.SubprocessFlags.NONE)
 
     def _resolve_command(self):
-        localsend = shutil.which("localsend")
-        if localsend:
-            return [localsend, "--headless", "send"]
-
-        flatpak = shutil.which("flatpak")
-        if flatpak and self._has_flatpak_app(flatpak, "org.localsend.localsend_app"):
-            return [
-                flatpak,
-                "run",
-                "--file-forwarding",
-                "org.localsend.localsend_app",
-                "@@",
-            ]
-
+        ls = shutil.which("localsend")
+        if ls:
+            return [ls, "--headless", "send"]
+        fp = shutil.which("flatpak")
+        if fp and self._has_flatpak_app(fp, "org.localsend.localsend_app"):
+            return [fp, "run", "--file-forwarding", "org.localsend.localsend_app", "@@"]
         return None
 
-    def _has_flatpak_app(self, flatpak, app_id):
-        process = Gio.Subprocess.new(
-            [flatpak, "info", app_id],
-            Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,
-        )
-        return process.wait_check()
+    def _has_flatpak_app(self, fp, app_id):
+        p = Gio.Subprocess.new([fp, "info", app_id],
+            Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE)
+        return p.wait_check()
 
     def _selected_paths(self, files):
         paths = []
-
-        for file in files:
-            location = file.get_location()
-            if not location:
+        for f in files:
+            loc = f.get_location()
+            if not loc:
                 continue
-
-            path = location.get_path()
-            if path and path not in paths:
-                paths.append(path)
-
+            p = loc.get_path()
+            if p and p not in paths:
+                paths.append(p)
         return paths
 
     def _make_item(self, paths):
-        label = (
-            "Send via LocalSend" if len(paths) == 1 else "Send selected via LocalSend"
-        )
-        item = Nautilus.MenuItem(
-            name="LocalSendNautilus::send_via_localsend",
-            label=label,
-            icon="localsend",
-        )
+        lbl = "Send via LocalSend" if len(paths) == 1 else "Send selected via LocalSend"
+        item = Nautilus.MenuItem(name="LocalSendNautilus::send_via_localsend", label=lbl, icon="localsend")
         item.connect("activate", self._on_activate, paths)
         return item
 
@@ -190,29 +145,24 @@ class SendViaLocalSendAction(GObject.GObject, Nautilus.MenuProvider):
     def get_file_items(self, *args):
         files = args[0] if len(args) == 1 else args[1]
         paths = self._selected_paths(files)
-
         if not paths or not self._resolve_command():
             return []
-
         return [self._make_item(paths)]
-NAUTEXTEOF
+PYEOF
 
     chmod +x "$ext_file"
     log_ok "Nautilus LocalSend extension installed."
-    log_info "Restart nautilus: nautilus -q && nautilus &"
+    log_info "Restart nautilus: nautilus -q"
 }
 
 # ---------------------------------------------------
 fix_terminal_desktop() {
-    local apps=(btop nvim yazi)
-    mkdir -p ~/.local/share/applications
-    for app in "${apps[@]}"; do
+    for app in btop nvim yazi; do
         local src="/usr/share/applications/${app}.desktop"
         local dst="$HOME/.local/share/applications/${app}.desktop"
         if [[ -f "$src" ]] && ! grep -q "kitty" "$dst" 2>/dev/null; then
             cp "$src" "$dst"
-            sed -i 's|^Exec=\(.*\)$|Exec=kitty -e \1|' "$dst"
-            sed -i 's/^Terminal=true/Terminal=false/' "$dst"
+            sed -i 's|^Exec=\(.*\)$|Exec=kitty -e \1|; s/^Terminal=true/Terminal=false/' "$dst"
             log_ok "Fixed desktop: ${app} (kitty)"
         fi
     done
@@ -221,46 +171,48 @@ fix_terminal_desktop() {
 # ---------------------------------------------------
 preflight_checks() {
     log_info "Running preflight checks..."
-
-    if [[ "$(id -u)" -eq 0 ]]; then
-        log_err "Jangan jalankan sebagai root."
-        exit 1
-    fi
+    if [[ "$(id -u)" -eq 0 ]]; then log_err "Jangan root."; exit 1; fi
 
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
-        local supported_fedora=false
-        case "${ID:-}" in
-            fedora|fedora-linux) supported_fedora=true ;;
+        case "${ID:-}" in fedora|fedora-linux) log_ok "Detected ${ID} ${VERSION_ID:-unknown}" ;;
+            *) log_err "This script is for Fedora. Detected: ${ID:-unknown}"; exit 1 ;;
         esac
-        if [[ "$supported_fedora" == "false" ]]; then
-            log_err "This script is designed for Fedora. Detected: ${ID:-unknown}"
-            exit 1
-        fi
-        log_ok "Detected ${ID} ${VERSION_ID:-unknown}"
     else
-        log_err "Cannot detect operating system."
-        exit 1
+        log_err "Cannot detect OS."; exit 1
     fi
-
     log_ok "Preflight checks passed."
 }
 
 # ---------------------------------------------------
 main() {
     preflight_checks
-    install_apps
-    install_flatpak
+
+    echo ""
+    log_info "========================================="
+    log_info "  Daily Apps Installation"
+    log_info "========================================="
+    echo ""
+
+    install_core
+    install_browser
+
+    read -rp "Install dev tools (vim, tmux, htop, net-tools, dll)? [Y/n]: " dev_choice
+    case "$dev_choice" in [Nn]*) log_warn "Skipping dev tools." ;; *) install_dev ;; esac
+
     install_nautilus_localsend
     fix_terminal_desktop
 
     echo ""
-    log_ok "========================================"
-    log_ok " Apps installation complete!"
-    log_ok "========================================"
+    log_ok "Apps installation complete!"
     echo ""
     log_info "Log: ${LOG_FILE}"
     echo ""
+    log_info "Flatpak (install manual — lihat README.md):"
+    log_info "  com.discord.Discord          com.spotify.Client"
+    log_info "  com.visualstudio.code        org.localsend.localsend_app"
+    log_info "  io.github.zen_browser.zen    com.github.tchx84.Flatseal"
+    log_info ""
 }
 
 main "$@"
