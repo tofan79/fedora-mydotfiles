@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# DeckShift — Switch from MangoWM to Gaming Mode
+set -uo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/deckshift"
+SDDM_CONF="/etc/sddm.conf.d/theme.conf"
+MANGO_CONF="$HOME/.config/mango/settings.conf"
+MANGO_CONF_BAK="$HOME/.config/mango/settings.conf.bak"
+
+mkdir -p "$CACHE_DIR"
+
+# Save current MangoWM settings (blur, shadows, animations)
+if [[ -f "$MANGO_CONF" ]]; then
+    cp "$MANGO_CONF" "$MANGO_CONF_BAK"
+    # Disable visual effects for gaming
+    sed -i 's/^blur=1/blur=0/' "$MANGO_CONF"
+    sed -i 's/^shadows=1/shadows=0/' "$MANGO_CONF"
+    sed -i 's/^animations=1/animations=0/' "$MANGO_CONF"
+    # Fast config reload via mmsg (if available)
+    command -v mmsg &>/dev/null && mmsg -d reload_config 2>/dev/null || true
+fi
+
+# Save CPU governor + power profile
+GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")
+PPD=$(powerprofilesctl get 2>/dev/null || echo "unknown")
+echo "GOVERNOR=$GOVERNOR" > "$CACHE_DIR/saved-state"
+echo "PPD=$PPD" >> "$CACHE_DIR/saved-state"
+
+# Switch SDDM autologin to Gaming Mode session
+/usr/local/bin/gaming-session-switch gamescope
+
+# Restart SDDM → boot into Gaming Mode
+sudo systemctl restart sddm

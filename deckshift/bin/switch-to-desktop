@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# DeckShift — Switch from Gaming Mode to Desktop Mode
+set -uo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/deckshift"
+SDDM_CONF="/etc/sddm.conf.d/theme.conf"
+MANGO_CONF="$HOME/.config/mango/settings.conf"
+MANGO_CONF_BAK="$HOME/.config/mango/settings.conf.bak"
+
+# Restore CPU governor + power profile
+if [[ -f "$CACHE_DIR/saved-state" ]]; then
+    source "$CACHE_DIR/saved-state"
+    if [[ "$GOVERNOR" != "unknown" ]]; then
+        echo "$GOVERNOR" | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor >/dev/null 2>&1 || true
+    fi
+    if [[ "$PPD" != "unknown" ]]; then
+        powerprofilesctl set "$PPD" 2>/dev/null || true
+    fi
+    rm -f "$CACHE_DIR/saved-state"
+fi
+
+# Restore MangoWM settings
+if [[ -f "$MANGO_CONF_BAK" ]]; then
+    cp "$MANGO_CONF_BAK" "$MANGO_CONF"
+    rm -f "$MANGO_CONF_BAK"
+fi
+
+# Switch SDDM autologin back to MangoWM session
+/usr/local/bin/gaming-session-switch mango
+
+# Restart SDDM → boot into Desktop Mode
+sudo systemctl restart sddm

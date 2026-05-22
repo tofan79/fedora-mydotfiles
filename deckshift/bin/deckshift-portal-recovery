@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Portal Recovery — restart portal stack after returning from Gaming Mode
+# Intended to be called from MangoWM autostart (exec-once)
+set -euo pipefail
+
+MARKER="${XDG_CACHE_HOME:-$HOME/.cache}/deckshift/.just-returned"
+
+# If marker doesn't exist, skip (normal boot, not gaming return)
+if [[ ! -f "$MARKER" ]]; then
+    exit 0
+fi
+
+rm -f "$MARKER"
+
+notify-send "Gaming Mode" "Recovering desktop services..." 2>/dev/null || true
+
+# Restart portal stack sequentially (avoid race)
+systemctl --user stop xdg-desktop-portal-mango 2>/dev/null || true
+systemctl --user stop xdg-desktop-portal-wlr 2>/dev/null || true
+systemctl --user stop xdg-desktop-portal 2>/dev/null || true
+systemctl --user stop xdg-desktop-portal-gtk 2>/dev/null || true
+
+sleep 1
+
+systemctl --user start xdg-desktop-portal-mango 2>/dev/null || true
+systemctl --user start xdg-desktop-portal-wlr 2>/dev/null || true
+systemctl --user start xdg-desktop-portal 2>/dev/null || true
+systemctl --user start xdg-desktop-portal-gtk 2>/dev/null || true
+
+notify-send "Gaming Mode" "Desktop services restored." 2>/dev/null || true

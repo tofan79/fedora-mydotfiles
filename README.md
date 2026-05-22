@@ -301,6 +301,53 @@ Fedora/RPM Fusion **tidak punya** package i686 terpisah untuk mangohud/vkBasalt 
 9. **clean.sh** ada di `dotfiles/clean/clean.sh` — jalankan manual untuk cleanup.
 10. **grub-btrfs** tidak diinstall karena incompatibel dengan BLS (BootLoader Spec) Fedora. Snapper tetap berfungsi penuh untuk timeline snapshot.
 
+## DeckShift — Gaming Mode (Steam Deck–style)
+
+> **Note:** Fitur opsional, jalanin `./deckshift/deckshift.sh` setelah install.sh + gaming.sh.
+
+DeckShift ngubah Fedora jadi dual-mode: **Desktop Mode** (MangoWM biasa) ↔ **Gaming Mode** (Steam Big Picture di Gamescope).
+Adaptasi dari [Omarchy DeckShift](https://git.no-signal.uk/nosignal/deckshift) buat Fedora + MangoWM.
+
+### Cara Kerja
+
+| Tombol | Aksi |
+|--------|------|
+| `Super+Shift+S` | Desktop → Gaming Mode (reboot ke SDDM → Gamescope) |
+| `Super+Shift+R` | Gaming → Desktop (di dalam Gamescope atau desktop) |
+
+### Flow
+
+```text
+Desktop (MangoWM)
+  │  Super+Shift+S
+  ├─ switch-to-gaming:
+  │   ├─ Backup MangoWM settings (blur/shadow/animasi → mati)
+  │   ├─ Save CPU governor + power profile → performance
+  │   └─ systemctl restart sddm → boot ke Gaming session
+  │
+Gaming (Gamescope + Steam Big Picture)
+  │  Super+Shift+R
+  ├─ gaming-keybind-monitor (python-evdev) detect combo
+  │   └─ switch-to-desktop:
+  │       ├─ Restore CPU governor + power profile
+  │       ├─ Restore MangoWM settings
+  │       └─ systemctl restart sddm → boot ke MangoWM
+```
+
+### Struktur File
+
+| Path | Fungsi |
+|------|--------|
+| `deckshift/deckshift.sh` | Installer — deploy scripts, configs, keybinds |
+| `deckshift/bin/switch-to-gaming` | Entry point dari MangoWM |
+| `deckshift/bin/switch-to-desktop` | Exit point dari Gamescope |
+| `deckshift/bin/gaming-session-switch` | Toggle SDDM autologin session |
+| `deckshift/bin/gamescope-session-nm-wrapper` | Session wrapper (performance mode + Steam launch) |
+| `deckshift/bin/gaming-keybind-monitor` | Python evdev daemon (Super+Shift+R listener) |
+| `deckshift/bin/deckshift-portal-recovery` | Restart portal stack setelah gaming return |
+| `deckshift/sessions/gamescope-session-steam-nm.desktop` | SDDM session entry |
+| `deckshift/config/` | sudoers, polkit, udev, security, pipewire, env |
+
 ## Tips
 
 ```bash
@@ -309,6 +356,15 @@ sudo dnf update --refresh
 
 # Cleanup system
 bash dotfiles/clean/clean.sh
+
+# Install DeckShift gaming mode
+./deckshift/deckshift.sh
+
+# Verify DeckShift
+./deckshift/deckshift.sh verify
+
+# Remove DeckShift
+./deckshift/deckshift.sh uninstall
 
 # Runtime via mise
 mise use --global node@22

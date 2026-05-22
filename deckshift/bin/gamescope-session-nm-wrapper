@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Gamescope session wrapper — runs as SDDM session
+set -uo pipefail
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/deckshift"
+mkdir -p "$CACHE_DIR"
+
+# Set performance mode
+GOVERNOR=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo "unknown")
+if [[ "$GOVERNOR" != "performance" ]]; then
+    echo "performance" | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor >/dev/null 2>&1 || true
+fi
+
+# Save state for restore on exit
+echo "GOVERNOR=$GOVERNOR" > "$CACHE_DIR/saved-state"
+PPD=$(powerprofilesctl get 2>/dev/null || echo "unknown")
+echo "PPD=$PPD" >> "$CACHE_DIR/saved-state"
+
+powerprofilesctl set performance 2>/dev/null || true
+
+# Start keybind monitor (background)
+/usr/local/bin/gaming-keybind-monitor &
+KEYBIND_PID=$!
+
+# Cleanup trap
+cleanup() {
+    local rc=$?
+
+    # Kill keybind monitor
+    kill "$KEYBIND_PID" 2>/dev/null || true
+
+    # Restore CPU governor
+    if [[ -f "$CACHE_DIR/saved-state" ]]; then
+        source "$CACHE_DIR/saved-state"
+        if [[ "$GOVERNOR" != "unknown" ]]; then
+            echo "$GOVERNOR" | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor >/dev/null 2>&1 || true
+        fi
+        if [[ "$PPD" != "unknown" ]]; then
+            powerprofilesctl set "$PPD" 2>/dev/null || true
+        fi
+        rm -f "$CACHE_DIR/saved-state"
+    fi
+
+    if [[ $rc -eq 0 ]]; then
+        /usr/local/bin/gaming-session-switch mango
+        notify-send "Gaming Mode" "Returning to Desktop..." 2>/dev/null || true
+        sleep 1
+        sudo systemctl restart sddm
+    fi
+
+    exit $rc
+}
+trap cleanup EXIT INT TERM
+
+# Detect best resolution from connected displays
+RES_W=1920
+RES_H=1080
+REFRESH=60
+
+# Try to get EDID info from DRM
+if command -v drm_info &>/dev/null; then
+    # drm_info might provide modes — but it's complex, skip for now
+    true
+fi
+
+# Use connected outputs from sysfs
+for connector in /sys/class/drm/*/status; do
+    if [[ -f "$connector" ]] && [[ "$(cat "$connector")" == "connected" ]]; then
+        modes_file="$(dirname "$connector")/modes"
+        if [[ -f "$modes_file" ]]; then
+            MODE=$(head -1 "$modes_file" 2>/dev/null || true)
+            if [[ -n "$MODE" ]]; then
+                # Parse mode like "1920x1080" or "1920x1080@165"
+                if echo "$MODE" | grep -q '@'; then
+                    RES_W=$(echo "$MODE" | cut -d'x' -f1)
+                    RES_H=$(echo "$MODE" | cut -d'x' -f2 | cut -d'@' -f1)
+                    REFRESH=$(echo "$MODE" | cut -d'@' -f2)
+                else
+                    RES_W=$(echo "$MODE" | cut -d'x' -f1)
+                    RES_H=$(echo "$MODE" | cut -d'x' -f2)
+                fi
+                break
+            fi
+        fi
+    fi
+done
+
+# Build gamescope args
+GAMESCOPE_ARGS=()
+GAMESCOPE_ARGS+=(-W "$RES_W")
+GAMESCOPE_ARGS+=(-H "$RES_H")
+GAMESCOPE_ARGS+=(-r "$REFRESH")
+GAMESCOPE_ARGS+=(--steam)
+
+# Check if NVIDIA — add force-composition
+if lspci 2>/dev/null | grep -qi 'VGA.*NVIDIA'; then
+    GAMESCOPE_ARGS+=(--force-composition)
+fi
+
+# Launch Steam Big Picture in Gamescope
+notify-send "Gaming Mode" "Launching Steam Big Picture..." 2>/dev/null || true
+exec gamescope "${GAMESCOPE_ARGS[@]}" -- steam -bigpicture "$@"

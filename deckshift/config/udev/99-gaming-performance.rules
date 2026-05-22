@@ -1,0 +1,2 @@
+# Gaming performance — grant permissions for CPU/GPU power control
+SUBSYSTEM=="cpu", ACTION=="change", KERNEL=="cpu*", RUN+="/usr/bin/chmod 0666 /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"

@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Gaming Mode
+Comment=Steam Big Picture inside Gamescope
+Exec=/usr/local/bin/gamescope-session-nm-wrapper
+Type=XSession
