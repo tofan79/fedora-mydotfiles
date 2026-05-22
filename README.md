@@ -3,6 +3,8 @@
 Setup Fedora Everything untuk daily driver: gaming, streaming, coding, editing, web.
 Mapping package dari [Nobara Linux kickstart](nv-flat-nobara-live-steam-htpc-43.ks).
 
+**Installer:** Fedora Everything — pilih **Standard** + **Developer** package groups di Anaconda. Sisanya dihandle script.
+
 ---
 
 ## Struktur
