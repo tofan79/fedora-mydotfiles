@@ -393,7 +393,7 @@ asusctl -c 80
 ## Referensi
 
 - [Nobara Linux](https://nobaraproject.org/)
-- [arch-mydotfiles](https://github.com/mangkobane/arch-mydotfiles)
+- [arch-mydotfiles](https://github.com/tofan79/arch-mydotfiles)
 - [FyraLabs Terra](https://terra.fyralabs.com/)
 - [RPM Fusion](https://rpmfusion.org/)
 - [ASUS Linux COPR](https://copr.fedorainfracloud.org/coprs/lukenukem/asus-linux/)
