@@ -1,6 +1,6 @@
 [SddmGreeterTheme]
-Name=girl-coffee
-Description=just a girl holdin coffee
+Name=clockwork
+Description=Orbital - Clockwork
 Author=Darkkal44
 Type=sddm-theme
 MainScript=Main.qml

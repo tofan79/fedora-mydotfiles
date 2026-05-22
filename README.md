@@ -126,7 +126,7 @@ cups, cups-filters, cups-browsed, cups-pk-helper, cups-pdf, ghostscript, gutenpr
 #### SDDM
 
 - Wayland=false, X11=true, autologin user
-- Theme: field (bundled dari qylock — field, girl-coffee, man-bicycle)
+- Theme: orbital (Clockwork — qylock, bundled di dotfiles/sddm/)
 - Disable conflicting DMs: gdm, lightdm, lxdm, greetd, plasmalogin
 - Default target: graphical.target
 

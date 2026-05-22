@@ -740,20 +740,16 @@ install_sddm() {
         }
     fi
 
-    # Copy bundled SDDM themes
-    local sddm_src="${SCRIPT_DIR}/dotfiles/sddm"
+    # Copy bundled SDDM theme (Clockwork/Orbital)
+    local sddm_src="${SCRIPT_DIR}/dotfiles/sddm/orbital"
     if [[ -d "$sddm_src" ]]; then
         sudo mkdir -p /usr/share/sddm/themes
-        for theme_dir in "$sddm_src"/*/; do
-            local theme_name
-            theme_name=$(basename "$theme_dir")
-            if [[ -d "/usr/share/sddm/themes/$theme_name" ]]; then
-                log_ok "SDDM theme '$theme_name' already exists. Skipping."
-            else
-                sudo cp -r "$theme_dir" "/usr/share/sddm/themes/$theme_name"
-                log_ok "SDDM theme '$theme_name' copied."
-            fi
-        done
+        if [[ -d "/usr/share/sddm/themes/orbital" ]]; then
+            log_ok "SDDM theme 'orbital' already exists. Skipping."
+        else
+            sudo cp -r "$sddm_src" "/usr/share/sddm/themes/orbital"
+            log_ok "SDDM theme 'orbital' (Clockwork) copied."
+        fi
     fi
 
     sudo mkdir -p /etc/sddm.conf.d
@@ -775,7 +771,7 @@ DefaultUser=$current_user
 UserAuthFile=.Xauthority
 
 [Theme]
-Current=field
+Current=orbital
 
 [Users]
 MaximumUid=60000
