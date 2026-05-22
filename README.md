@@ -259,34 +259,7 @@ flatpak install flathub io.github.webapp_manager_linux.webapp_manager_linux
 
 ---
 
-## Nobara-specific — Tidak Ada di Fedora
 
-Package Nobara yang tidak tersedia di repositori Fedora.
-> **⚠️ Tidak bisa tambah Nobara repo.** Nobara tidak publish public repo untuk Fedora vanilla. Package mereka di-patch ulang (kernel, mesa, wine, gamescope-session, dll) dan akan **conflict** dengan RPM Fusion + Fedora official. DNF bakal bentrok dependency.
-
-| Nobara Package | Alternatif Fedora / Flatpak |
-|----------------|-----------------------------|
-| `gamescope-session-plus` | Tidak ada — cukup `gamescope` via Steam launch options |
-| `gamescope-session-steam` | Tidak ada |
-| `gamescope-session-common` | Tidak ada |
-| `gamescope-htpc-common` | Tidak ada |
-| `opengamepadui` | Flatpak: `io.github.opengamepadui.OpenGamepadUI` |
-| `inputplumber` | Tidak ada — COPR / compile manual |
-| `powerstation` | Tidak ada — gunakan `power-profiles-daemon` |
-| `steamos-powerbuttond` | Tidak ada |
-| `ds-inhibit` | Tidak ada |
-| `falcond` | Tidak ada |
-| `kde-steamdeck` | Tidak ada |
-| `nobara-*` tools | Tidak ada — pakai `dnf` langsung |
-| `winehq-staging` | `wine` dari RPM Fusion (staging-base) — equivalent ✅ |
-| `umu-launcher` | Flatpak: `net.davidotek.pupgui2` (ProtonUp-Qt) |
-| `protonplus` | Flatpak: `com.vysp3r.ProtonPlus` ✅ |
-
-### 32-bit mangohud / vkBasalt
-
-Fedora/RPM Fusion **tidak punya** package i686 terpisah untuk mangohud/vkBasalt — support 32-bit sudah built-in ke package 64-bit. `mangohud-libs.i686` dan `vkBasalt-libs.i686` **tidak diperlukan**. Gaming via Steam/Proton (64-bit) tetap berfungsi penuh.
-
----
 
 ## Catatan
 
