@@ -27,7 +27,4 @@ sleep 3
 sleep 1
 /usr/libexec/xdg-desktop-portal >/dev/null 2>&1 &
 
-# DeckShift portal recovery — restart portal stack after Gaming Mode return
-/usr/local/bin/deckshift-portal-recovery &
-
 wait
