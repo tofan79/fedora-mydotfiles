@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# MangoWM Fedora 44 Installation Script
+# Fedora Core Setup - MangoWM + Noctalia Daily Driver
+# Core-only base for a minimal Fedora install with SDDM and MangoWM.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -7,1172 +8,731 @@ DOTFILES_DIR="${SCRIPT_DIR}/dotfiles"
 WALLPAPERS_DIR="${SCRIPT_DIR}/Wallpapers"
 LOG_FILE="${SCRIPT_DIR}/install.log"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 log_info() { echo -e "${CYAN}[INFO]${NC}  $*"; }
 log_ok()   { echo -e "${GREEN}[OK]${NC}   $*"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 log_err()  { echo -e "${RED}[ERROR]${NC} $*"; }
 
-try() {
-    local cmd="$*"
-    "$@" || { local rc=$?; log_warn "FAILED (exit ${rc}): ${cmd}"; return 0; }
-}
-
 if [[ -f "$LOG_FILE" ]]; then
     mv "$LOG_FILE" "${LOG_FILE}.old.$(date +%Y%m%d%H%M%S)"
 fi
-
 exec > >(tee -a "$LOG_FILE") 2>&1
 log_info "Logging to: ${LOG_FILE}"
 trap 'log_err "Failed at line ${LINENO}: ${BASH_COMMAND}"' ERR
 
-# ---------------------------------------------------
-setup_mirrors() {
-    log_info "Setting up mirrors..."
+FEDORA_VER="$(rpm -E %fedora 2>/dev/null || true)"
+ARCH="$(rpm -E %_arch 2>/dev/null || uname -m)"
+FEDORA_MIRRORS=(
+    "https://mirror.nevacloud.com/fedora/fedora-linux"
+    "https://ftp.jaist.ac.jp/pub/Linux/Fedora"
+    "https://sg.mirrors.cicku.me/fedora/linux"
+)
 
-    local fedora_repo="/etc/yum.repos.d/fedora.repo"
-    if [[ -f "$fedora_repo" ]]; then
-        local fedora_mirror=""
-for mirror in \
-            "https://mirror.nevacloud.com/fedora/fedora-linux" \
-            "https://download.nus.edu.sg/mirror/fedora/linux" \
-            "https://sg.mirrors.cicku.me/fedora/linux" \
-            "https://ftp.jaist.ac.jp/pub/Linux/Fedora" \
-            "https://ftp.riken.go.jp/fedora/linux" \
-            "https://ftp.kaist.ac.kr/fedora/linux" \
-            "https://dl.fedoraproject.org/pub/fedora/linux" \
-            "https://mirrors.kernel.org/fedora/linux"; do
-            if timeout 3 curl -s -I -L "$mirror" -o /dev/null 2>/dev/null; then
-                fedora_mirror="$mirror"
-                break
-            fi
-        done
-        if [[ -n "$fedora_mirror" ]]; then
-            log_info "Using Fedora mirror: $fedora_mirror"
-            local mirror_url="${fedora_mirror}/releases/\$releasever/Everything/\$basearch/os"
-            sudo sed -i "s|^#*baseurl=.*|baseurl=$mirror_url|" "$fedora_repo" 2>/dev/null || true
-            sudo sed -i "s|^metalink=.*|#metalink=|" "$fedora_repo" 2>/dev/null || true
-        fi
-    fi
-
-    for repo in rpmfusion-free rpmfusion-nonfree; do
-        local repo_file="/etc/yum.repos.d/${repo}.repo"
-        if [[ -f "$repo_file" ]]; then
-            local mirror_base=""
-            # Use fastestmirror instead of manual selection for RPMFusion
-            # Just ensure fastestmirror is enabled
-            grep -q "^fastestmirror=True" /etc/dnf/dnf.conf || \
-                echo "fastestmirror=True" | sudo tee -a /etc/dnf/dnf.conf > /dev/null
-        fi
-    done
-
-    # Refresh cache
-    sudo dnf makecache --refresh 2>/dev/null || true
-    log_ok "Mirrors configured."
+join_by_comma() {
+    local IFS=,
+    echo "$*"
 }
 
-# ---------------------------------------------------
+fedora_baseurls() {
+    local suffix="$1"
+    local urls=()
+    local mirror
+    for mirror in "${FEDORA_MIRRORS[@]}"; do
+        urls+=("${mirror}/${suffix}")
+    done
+    join_by_comma "${urls[@]}"
+}
+
+detect_os() {
+    if [[ -f /etc/os-release ]]; then
+        # shellcheck source=/dev/null
+        . /etc/os-release
+        if [[ "${ID:-}" != "fedora" ]]; then
+            log_err "Unsupported: ${ID:-unknown}. This script is for Fedora only."
+            exit 1
+        fi
+        FEDORA_VER="${VERSION_ID:-$FEDORA_VER}"
+        log_ok "Detected: ${PRETTY_NAME:-Fedora}"
+    else
+        log_err "Cannot detect OS."
+        exit 1
+    fi
+}
+
 preflight_checks() {
     log_info "Running preflight checks..."
-    setup_mirrors
+    detect_os
 
     if [[ "$(id -u)" -eq 0 ]]; then
-        log_err "Do not run this script as root. Run as a regular user with sudo access."
+        log_err "Do not run as root. Run as regular user with sudo."
         exit 1
     fi
 
     if ! sudo -n true 2>/dev/null; then
-        log_warn "This script requires sudo privileges. You will be prompted for your password."
-        # Refresh sudo timestamp supaya gak timeout ditengah install
+        log_warn "Sudo required."
         sudo -v
     else
-        log_ok "Sudo privileges available."
-    fi
-
-    if [[ -f /etc/os-release ]]; then
-        . /etc/os-release
-        local supported_fedora=false
-        case "${ID:-}" in
-            fedora|fedora-linux) supported_fedora=true ;;
-        esac
-        if [[ "$supported_fedora" == "false" ]]; then
-            log_err "This script is designed for Fedora. Detected: ${ID:-unknown}"
-            exit 1
-        fi
-        log_ok "Detected ${ID} ${VERSION_ID:-unknown}"
-    else
-        log_err "Cannot detect operating system."
-        exit 1
+        log_ok "Sudo available."
     fi
 
     if [[ ! -d "$DOTFILES_DIR" ]]; then
-        log_err "Dotfiles directory not found at ${DOTFILES_DIR}"
-        log_err "Make sure this script is in the same directory as the 'dotfiles' folder."
+        log_err "Dotfiles dir not found: ${DOTFILES_DIR}"
         exit 1
     fi
 
-    # Secure Boot warning — NVIDIA akmods akan gagal load kalau SB aktif
     if mokutil --sb-state 2>/dev/null | grep -qi "enabled"; then
-        log_warn "============================================"
-        log_warn " SECURE BOOT IS ENABLED!"
-        log_warn " NVIDIA kernel modules may FAIL to load."
-        log_warn " Disable Secure Boot di BIOS/UEFI sebelum"
-        log_warn " melanjutkan instalasi NVIDIA drivers."
-        log_warn "============================================"
-        if [[ -t 0 ]]; then
-            read -rp "Lanjutkan tetap? [y/N]: " sb_response
-        else
-            sb_response="Y"
-        fi
+        log_warn "Secure Boot is enabled. NVIDIA akmods may need MOK enrollment before modules load."
+        read -rp "Continue anyway? [y/N]: " sb_response
         case "$sb_response" in
-            [Yy]*) log_warn "Melanjutkan dengan Secure Boot aktif. Risiko ditanggung sendiri." ;;
-            *)     log_err "Install dibatalkan. Disable Secure Boot dulu."; exit 1 ;;
+            [Yy]*) log_warn "Proceeding with Secure Boot enabled." ;;
+            *)     log_err "Install cancelled."; exit 1 ;;
         esac
     else
-        log_ok "Secure Boot: disabled (OK untuk NVIDIA akmods)"
+        log_ok "Secure Boot: disabled or not detected"
     fi
 
-    # Conflict awareness — power management tools yang bisa bentrok
-    local conflict_found=0
-    for svc in tlp auto-cpufreq tuned; do
-        if systemctl is-enabled "${svc}.service" &>/dev/null 2>&1; then
-            log_warn "Detected: ${svc} — may conflict with power-profiles-daemon."
-            conflict_found=1
+    log_ok "Preflight passed."
+}
+
+dnf_install_required() {
+    local pkgs=("$@")
+    local pkg
+
+    for pkg in "${pkgs[@]}"; do
+        if rpm -q "$pkg" &>/dev/null || command -v "$pkg" &>/dev/null; then
+            log_ok "${pkg} already installed."
+            continue
+        fi
+
+        log_info "Installing ${pkg}..."
+        if ! sudo dnf install -y "$pkg"; then
+            log_err "FAILED: ${pkg} is required. Cannot continue."
+            exit 1
         fi
     done
-    if [[ "$conflict_found" -eq 1 ]]; then
-        log_warn "Pertimbangkan disable service di atas sebelum install."
-        log_warn "Contoh: sudo systemctl disable --now tlp"
-        if [[ -t 0 ]]; then
-            read -rp "Lanjutkan tetap? [Y/n]: " conflict_response
-        else
-            conflict_response="Y"
+}
+
+dnf_install_optional() {
+    local pkgs=("$@")
+    local failed=()
+    local pkg
+
+    for pkg in "${pkgs[@]}"; do
+        if rpm -q "$pkg" &>/dev/null || command -v "$pkg" &>/dev/null; then
+            log_ok "${pkg} already installed."
+            continue
         fi
-        case "$conflict_response" in
-            [Nn]*) log_err "Install dibatalkan."; exit 1 ;;
-        esac
-    fi
 
-    log_ok "Preflight checks passed."
-}
-
-# ---------------------------------------------------
-enable_multilib() {
-    log_info "Fedora 44: multilib (32-bit) sudah aktif secara default — skip."
-    log_ok "32-bit package support: available."
-}
-
-# ---------------------------------------------------
-configure_dnf() {
-    log_info "Configuring DNF..."
-
-    local dnf_conf="/etc/dnf/dnf.conf"
-    local needs_update=false
-
-    # Check each setting and add if missing
-    if ! grep -q "^installonly_limit=3" "$dnf_conf" 2>/dev/null; then
-        echo "installonly_limit=3" | sudo tee -a "$dnf_conf" > /dev/null
-        needs_update=true
-    fi
-
-    if ! grep -q "^max_parallel_downloads" "$dnf_conf" 2>/dev/null; then
-        echo "max_parallel_downloads=15" | sudo tee -a "$dnf_conf" > /dev/null
-        needs_update=true
-    fi
-
-    if ! grep -q "^defaultyes=True" "$dnf_conf" 2>/dev/null; then
-        echo "defaultyes=True" | sudo tee -a "$dnf_conf" > /dev/null
-        needs_update=true
-    fi
-
-    if ! grep -q "^fastestmirror=True" "$dnf_conf" 2>/dev/null; then
-        echo "fastestmirror=True" | sudo tee -a "$dnf_conf" > /dev/null
-        needs_update=true
-    fi
-
-    if ! grep -q "^skip_if_unavailable=True" "$dnf_conf" 2>/dev/null; then
-        echo "skip_if_unavailable=True" | sudo tee -a "$dnf_conf" > /dev/null
-        needs_update=true
-    fi
-
-    if [[ "$needs_update" == "true" ]]; then
-        log_ok "DNF configuration updated."
-    else
-        log_ok "DNF already configured. Skipping."
-    fi
-}
-
-# ---------------------------------------------------
-add_repositories() {
-    log_info "Adding third-party repositories..."
-
-    # RPM Fusion - check both packages
-    if rpm -q rpmfusion-free-release &>/dev/null && rpm -q rpmfusion-nonfree-release &>/dev/null; then
-        log_ok "RPM Fusion already installed. Skipping."
-    else
-        log_info "Installing RPM Fusion (free and non-free)..."
-        sudo dnf install -y \
-            https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
-            https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm || {
-            log_warn "Direct URL failed, trying mirrorlist..."
-            sudo dnf install -y dnf-plugins-core 2>/dev/null || true
-            sudo dnf install -y --repofrompath "rpmfusion-free,https://mirrors.rpmfusion.org/free/fedora/$(rpm -E %fedora)/$(uname -m)/os/" \
-                             --repofrompath "rpmfusion-nonfree,https://mirrors.rpmfusion.org/nonfree/fedora/$(rpm -E %fedora)/$(uname -m)/os/" \
-                             rpmfusion-free-release rpmfusion-nonfree-release 2>/dev/null || true
-        }
-    fi
-
-    # EPEL (Extra Packages for Enterprise Linux) — needed for timeshift
-    if rpm -q epel-release &>/dev/null; then
-        log_ok "EPEL already installed. Skipping."
-    else
-        log_info "Installing EPEL repository..."
-        sudo dnf install -y epel-release 2>/dev/null || \
-            log_warn "EPEL unavailable — timeshift will be skipped"
-    fi
-
-    # Terra repo — bootstrap
-    if rpm -q terra-release &>/dev/null; then
-        log_ok "Terra repository already installed. Skipping."
-    else
-        log_info "Installing Terra repository..."
-        # --nogpgcheck adalah metode resmi Fyra Labs untuk bootstrap Terra:
-        # GPG key Terra ada DI DALAM paket terra-release itu sendiri, sehingga
-        # tidak bisa diverifikasi sebelum diinstall (chicken-and-egg problem).
-        # Setelah terra-release terinstall, semua paket Terra berikutnya akan
-        # diverifikasi secara normal menggunakan key yang sudah masuk ke RPM DB.
-        # Ref: https://developer.fyralabs.com/terra/installing
-        if sudo dnf install -y --nogpgcheck \
-            --repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" \
-            terra-release 2>/dev/null; then
-            # Verifikasi GPG key sudah masuk ke RPM DB setelah install
-            if rpm -q --qf "%{SIGPGP:pgpsig}\n" terra-release 2>/dev/null | grep -qi "key"; then
-                log_ok "Terra repo installed. GPG key verified in RPM DB."
-            else
-                log_ok "Terra repo installed."
-            fi
-            # Refresh cache dengan GPG check aktif
-            sudo dnf makecache --refresh 2>/dev/null || true
-            log_ok "Terra repo cache refreshed (GPG check aktif)."
-        else
-            log_warn "Terra repo failed — MangoWM/Noctalia tidak akan terinstall."
-            log_warn "Manual: sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra\$releasever' terra-release"
+        log_info "Installing ${pkg}..."
+        if ! sudo dnf install -y "$pkg"; then
+            log_warn "${pkg} could not be installed automatically."
+            failed+=("$pkg")
         fi
+    done
+
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        log_warn "Packages not installed automatically: ${failed[*]}"
     fi
-
-    # Bibata cursor — via COPR peterwu/rendezvous
-    if ! sudo dnf copr list 2>/dev/null | grep -q "peterwu/rendezvous"; then
-        log_info "Adding peterwu/rendezvous COPR (Bibata cursor)..."
-        sudo dnf copr enable peterwu/rendezvous -y 2>/dev/null || \
-            log_warn "COPR peterwu/rendezvous gagal — bibata cursor akan skip"
-    fi
-
-    # Terra multimedia — skip, WIP dan hanya support EL10, bukan Fedora.
-    # Multimedia codec sudah ditangani oleh RPMFusion + install_multimedia().
-    # Ref: https://github.com/terrapkg/packages
-    log_info "Terra multimedia: skipped (EL10 only — RPMFusion handles codecs)"
-
-    # ASUS Linux repository (asusctl — fan, battery, keyboard)
-    # Check both COPR and direct repo file
-    if [[ -f /etc/yum.repos.d/asus-linux.repo ]] || \
-       grep -q "asus-linux" /etc/copr.d/* 2>/dev/null; then
-        log_ok "ASUS Linux repository already configured. Skipping."
-    else
-        log_info "Adding ASUS Linux repository (asusctl)..."
-        local asus_repo_url="https://copr.fedorainfracloud.org/coprs/lukenukem/asus-linux/repo/fedora-$(rpm -E %fedora)/lukenukem-asus-linux-fedora-$(rpm -E %fedora).repo"
-
-        if ! sudo dnf copr enable lukenukem/asus-linux -y 2>/dev/null; then
-            log_warn "COPR enable failed — trying direct download..."
-            if ! sudo curl -fL -o /etc/yum.repos.d/asus-linux.repo "$asus_repo_url" 2>/dev/null; then
-                log_warn "ASUS repo unavailable — asusctl will be skipped."
-                log_warn "Manual install later: sudo dnf copr enable lukenukem/asus-linux"
-            fi
-        fi
-    fi
-
-    log_info "Refreshing package cache..."
-    sudo dnf makecache 2>/dev/null || true
-
-    log_ok "Repositories added."
+    return 0
 }
 
-# ---------------------------------------------------
+enable_dnf_parallel() {
+    log_info "Configuring DNF parallel downloads..."
+    sudo mkdir -p /etc/dnf
+    if [[ -f /etc/dnf/dnf.conf ]]; then
+        sudo cp /etc/dnf/dnf.conf "/etc/dnf/dnf.conf.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+    fi
+
+    sudo bash -c 'cat > /etc/dnf/dnf.conf' << 'DNFEOF'
+[main]
+max_parallel_downloads=3
+defaultyes=True
+keepcache=False
+install_weak_deps=False
+DNFEOF
+    log_ok "DNF configured."
+}
+
+write_fedora_repo() {
+    local file="/etc/yum.repos.d/fedora.repo"
+    local os_base debug_base source_base
+    os_base="$(fedora_baseurls 'releases/$releasever/Everything/$basearch/os/')"
+    debug_base="$(fedora_baseurls 'releases/$releasever/Everything/$basearch/debug/tree/')"
+    source_base="$(fedora_baseurls 'releases/$releasever/Everything/source/tree/')"
+    sudo cp "$file" "${file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+    sudo bash -c "cat > '$file'" << REPOEOF
+[fedora]
+name=Fedora \$releasever - \$basearch
+baseurl=${os_base}
+enabled=1
+countme=1
+metadata_expire=7d
+repo_gpgcheck=0
+type=rpm
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
+skip_if_unavailable=False
+
+[fedora-debuginfo]
+name=Fedora \$releasever - \$basearch - Debug
+baseurl=${debug_base}
+enabled=0
+metadata_expire=7d
+repo_gpgcheck=0
+type=rpm
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
+skip_if_unavailable=False
+
+[fedora-source]
+name=Fedora \$releasever - Source
+baseurl=${source_base}
+enabled=0
+metadata_expire=7d
+repo_gpgcheck=0
+type=rpm
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
+skip_if_unavailable=False
+REPOEOF
+}
+
+write_updates_repo() {
+    local file="/etc/yum.repos.d/fedora-updates.repo"
+    local os_base debug_base source_base
+    os_base="$(fedora_baseurls 'updates/$releasever/Everything/$basearch/')"
+    debug_base="$(fedora_baseurls 'updates/$releasever/Everything/$basearch/debug/')"
+    source_base="$(fedora_baseurls 'updates/$releasever/Everything/SRPMS/')"
+    sudo cp "$file" "${file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+    sudo bash -c "cat > '$file'" << REPOEOF
+[updates]
+name=Fedora \$releasever - \$basearch - Updates
+baseurl=${os_base}
+enabled=1
+countme=1
+repo_gpgcheck=0
+type=rpm
+gpgcheck=1
+metadata_expire=6h
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
+skip_if_unavailable=False
+
+[updates-debuginfo]
+name=Fedora \$releasever - \$basearch - Updates - Debug
+baseurl=${debug_base}
+enabled=0
+repo_gpgcheck=0
+type=rpm
+gpgcheck=1
+metadata_expire=6h
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
+skip_if_unavailable=False
+
+[updates-source]
+name=Fedora \$releasever - Updates Source
+baseurl=${source_base}
+enabled=0
+repo_gpgcheck=0
+type=rpm
+gpgcheck=1
+metadata_expire=6h
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
+skip_if_unavailable=False
+REPOEOF
+}
+
+write_openh264_repo() {
+    local file="/etc/yum.repos.d/fedora-cisco-openh264.repo"
+    sudo cp "$file" "${file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+    sudo bash -c "cat > '$file'" << 'REPOEOF'
+[fedora-cisco-openh264]
+name=Fedora $releasever openh264 (From Cisco) - $basearch
+baseurl=https://codecs.fedoraproject.org/openh264/$releasever/$basearch/os/
+enabled=1
+type=rpm
+repo_gpgcheck=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
+skip_if_unavailable=True
+REPOEOF
+}
+
+force_baseurl_repos() {
+    log_info "Switching Fedora repos from metalink/mirrorlist to baseurl..."
+    [[ -f /etc/yum.repos.d/fedora.repo ]] && write_fedora_repo
+    [[ -f /etc/yum.repos.d/fedora-updates.repo ]] && write_updates_repo
+    [[ -f /etc/yum.repos.d/fedora-cisco-openh264.repo ]] && write_openh264_repo
+    log_ok "Fedora baseurl repos configured: mirror.nevacloud.com first."
+    log_info "Baseurl mirror order: ${FEDORA_MIRRORS[*]}"
+}
+
+force_rpmfusion_baseurl() {
+    log_info "Switching RPM Fusion repos to explicit baseurl..."
+    local file
+    for file in /etc/yum.repos.d/rpmfusion-*.repo; do
+        [[ -f "$file" ]] || continue
+        sudo cp "$file" "${file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+        sudo sed -i \
+            -e 's/^metalink=/#metalink=/' \
+            -e 's/^mirrorlist=/#mirrorlist=/' \
+            -e 's|^#baseurl=http://download1.rpmfusion.org/|baseurl=https://download1.rpmfusion.org/|' \
+            -e 's|^#baseurl=https://download1.rpmfusion.org/|baseurl=https://download1.rpmfusion.org/|' \
+            "$file" 2>/dev/null || true
+    done
+    log_ok "RPM Fusion baseurl configured when repo files are present."
+}
+
+setup_repos() {
+    enable_dnf_parallel
+    force_baseurl_repos
+    sudo dnf install -y dnf-plugins-core || log_warn "dnf-plugins-core install failed; config-manager fallback may be unavailable."
+
+    log_info "Installing RPM Fusion repos..."
+    sudo dnf install -y \
+        "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VER}.noarch.rpm" \
+        "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VER}.noarch.rpm" || \
+        log_warn "RPM Fusion release install failed."
+    force_rpmfusion_baseurl
+
+    log_info "Adding Terra repo..."
+    if ! rpm -q terra-release &>/dev/null; then
+        sudo dnf install -y --nogpgcheck --repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" terra-release || \
+            sudo dnf config-manager addrepo --from-repofile=https://terra.fyralabs.com/terra.repo || \
+            log_warn "Terra repo setup failed."
+    fi
+    if [[ -f /etc/yum.repos.d/terra.repo ]] && ! grep -q '^priority=' /etc/yum.repos.d/terra.repo 2>/dev/null; then
+        sudo sed -i '/^\[terra/ a priority=150' /etc/yum.repos.d/terra.repo 2>/dev/null || true
+    fi
+
+    log_info "Adding Brave repo..."
+    if [[ ! -f /etc/yum.repos.d/brave-browser.repo ]]; then
+        sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo || \
+            sudo dnf config-manager --add-repo https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo || \
+            log_warn "Brave repo setup failed."
+    fi
+
+    sudo dnf makecache --refresh || true
+    log_ok "Repositories configured."
+}
+
 install_packages() {
-    log_info "Installing system packages (this may take a while)..."
+    log_info "Installing Fedora core packages..."
+    sudo dnf group install -y "Development Tools" || log_warn "Development Tools group failed."
 
-    sudo dnf install -y \
-        gcc make acpid \
-        libglvnd-glx libglvnd-opengl libglvnd-devel pkgconfig \
-        git curl wget rsync xorg-x11-server-Xwayland
+    local core_required=(
+        git curl wget2-wget rsync
+        linux-firmware amd-gpu-firmware mt7xxx-firmware realtek-firmware
+        microcode_ctl alsa-sof-firmware alsa-ucm
+        NetworkManager wpa_supplicant firewalld upower bluez switcheroo-control
+        xorg-x11-server-Xwayland mesa-dri-drivers mesa-vulkan-drivers vulkan-tools mesa-libEGL mesa-libGL
+        qt6-qtwayland qt5-qtwayland
+        pipewire pipewire-utils pipewire-alsa pipewire-pulseaudio pipewire-jack-audio-connection-kit wireplumber alsa-utils playerctl
+        libva-utils
+        sddm fish kitty
+        xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-wlr xdg-utils
+        libinput libxkbcommon seatd polkit
+        flatpak
+        cmake meson ninja-build python3 python3-pip python3-devel
+        podman podman-compose podman-docker ShellCheck openssh-clients openssh-server
+        tuned tuned-ppd chrony acpid
+    )
 
-    try sudo dnf install -y linux-firmware wireless-regdb alsa-firmware
-    try sudo dnf install -y NetworkManager-wifi wpa_supplicant
-    log_info "AMD firmware: sudah include di linux-firmware (Fedora 40+) — skip"
+    local core_optional=(
+        bat fzf zoxide fastfetch jq tmux ripgrep fd-find tree unzip zip bc lsof pciutils usbutils hwinfo
+        grim slurp wl-clipboard brightnessctl
+        jetbrains-mono-fonts fontawesome-fonts-all google-noto-sans-fonts google-noto-color-emoji-fonts adobe-source-code-pro-fonts
+        qt6ct qt5ct gtk3 gtk4 libadwaita adwaita-icon-theme papirus-icon-theme
+        cups cups-filters
+        exfatprogs ntfs-3g btrfs-progs cifs-utils dosfstools smartmontools logrotate tcpdump
+        eza pamixer wlsunset cliphist adw-gtk3-theme
+    )
 
-    sudo dnf install -y \
-        mesa-vulkan-drivers mesa-dri-drivers mesa-libGLU \
-        vulkan-loader vulkan-tools vulkan-validation-layers
-
-    # Nobara-style 32-bit compatibility libraries
-    try sudo dnf install -y --skip-unavailable \
-        glibc.i686 libgcc.i686 libstdc++.i686 \
-        pulseaudio-libs.i686 \
-        openssl-libs.i686 \
-        flac-libs.i686 libogg.i686 libvorbis.i686 \
-        libsndfile.i686 libasyncns.i686 \
-        libexif.i686 \
-        libICE.i686 libSM.i686 \
-        libuuid.i686 \
-        libwayland-client.i686 libwayland-server.i686 \
-        libXtst.i686 \
-        nss-mdns.i686 \
-        unixODBC.i686 \
-        sane-backends-libs.i686 \
-        json-c.i686 libaom.i686 libvpx.i686 \
-        llvm-libs.i686
-
-    try sudo dnf install -y \
-        pipewire-utils pipewire-alsa pipewire-pulseaudio \
-        wireplumber playerctl pamixer
-    try sudo dnf install -y pipewire-jack-audio-connection-kit || \
-    try sudo dnf install -y jack-audio-connection-kit
-
-    sudo dnf install -y libva-utils vdpauinfo
-
-    sudo dnf install -y qt5-qtwayland qt6-qtwayland
-
-    sudo dnf install -y \
-        eza python3-pip pipx fastfetch fish kitty mokutil flatpak git \
-        neovim starship bat fzf snapper zoxide \
-        bibata-cursor-themes btop podman podman-docker podman-compose \
-        bluez bluez-tools
-
-    # Tela-nord-dark icon theme (from GitHub release)
-    local tela_icon_dir="${HOME}/.local/share/icons/Tela-nord-dark"
-    if [[ ! -d "$tela_icon_dir" ]]; then
-        local tela_version="2025-02-10"
-        if curl -fL "https://github.com/vinceliuice/Tela-icon-theme/archive/refs/tags/${tela_version}.zip" -o /tmp/tela-icon.zip 2>/dev/null; then
-            unzip -o /tmp/tela-icon.zip -d /tmp/tela-icon 2>/dev/null
-            bash /tmp/tela-icon/Tela-icon-theme-${tela_version}/install.sh nord >/dev/null 2>&1 && \
-                log_ok "Tela-nord-dark icon theme installed" || \
-                log_warn "Failed to install Tela icon theme (continue)"
-            rm -rf /tmp/tela-icon /tmp/tela-icon.zip
-        else
-            log_warn "Could not download Tela icon theme (no network). Nautilus will use default icons."
-        fi
-    else
-        log_ok "Tela-nord-dark icon theme already installed"
-    fi
-
-    try sudo dnf install -y timeshift
-
-    try sudo dnf install -y \
-        gcc-c++ cmake ninja-build meson \
-        autoconf automake libtool \
-        elfutils-libelf-devel kernel-devel kernel-headers
-
-    try sudo dnf install -y --skip-unavailable \
-        jetbrains-mono-fonts \
-        google-noto-sans-fonts google-noto-serif-fonts \
-        google-noto-color-emoji-fonts \
-        liberation-fonts \
-        fira-code-fonts
-    # Nerd Fonts
-    if command -v curl &>/dev/null; then
-        mkdir -p ~/.local/share/fonts
-        curl -fL "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/JetBrainsMono.zip" -o /tmp/JetBrainsMono.zip 2>/dev/null && \
-            unzip -o /tmp/JetBrainsMono.zip -d ~/.local/share/fonts/ 2>/dev/null && \
-            fc-cache -f ~/.local/share/fonts/ 2>/dev/null && \
-            log_ok "JetBrains Mono Nerd Font installed" || true
-    fi
-
-    # Microsoft core fonts
-    if ! fc-list | grep -qi "arial\|times new roman\|verdana" 2>/dev/null; then
-        log_info "Installing Microsoft core fonts..."
-        try sudo dnf install -y curl cabextract xorg-x11-font-utils fontconfig
-
-        local mstt_installed=false
-        local mstt_urls=(
-            "https://sourceforge.net/projects/mscorefonts2/files/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm/download"
-            "https://downloads.sourceforge.net/project/mscorefonts2/rpms/msttcore-fonts-installer-2.6-1.noarch.rpm"
-        )
-        local mstt_rpm="/tmp/msttcore-fonts-installer.noarch.rpm"
-
-        for url in "${mstt_urls[@]}"; do
-            if curl -fL -o "$mstt_rpm" "$url" 2>/dev/null; then
-                if sudo dnf install -y "$mstt_rpm" &>/dev/null; then
-                    mstt_installed=true
-                    log_ok "Microsoft core fonts installed."
-                fi
-                rm -f "$mstt_rpm"
-                break
-            fi
-        done
-
-        if [[ "$mstt_installed" == "false" ]]; then
-            log_warn "Microsoft core fonts download failed — skip."
-        fi
-    else
-        log_ok "Microsoft core fonts already installed."
-    fi
-
-    sudo dnf install -y \
-        asusctl power-profiles-daemon
-
-    # Printing stack (Nobara-style)
-    try sudo dnf install -y \
-        cups cups-filters cups-browsed cups-pk-helper cups-pdf \
-        ghostscript gutenprint gutenprint-cups \
-        hplip bluez-cups \
-        colord nss-mdns \
-        system-config-printer system-config-printer-udev \
-        foomatic foomatic-db-ppds \
-        a2ps enscript paps \
-        pnm2ppa ptouch-driver splix \
-        samba-client
-
-    log_ok "All packages installed."
+    dnf_install_required "${core_required[@]}"
+    dnf_install_optional "${core_optional[@]}"
+    log_ok "Core packages installed."
 }
 
-# ---------------------------------------------------
 install_multimedia() {
-    log_info "Installing full multimedia codecs..."
-
-    if ! rpm -q rpmfusion-free-release-tainted &>/dev/null; then
-        try sudo dnf install -y rpmfusion-free-release-tainted
-    fi
-    if ! rpm -q libdvdcss &>/dev/null; then
-        try sudo dnf install -y libdvdcss
-    fi
-
-    log_info "Swapping ffmpeg-free to full ffmpeg..."
-    try sudo dnf swap ffmpeg-free ffmpeg --allowerasing -y
-
-    try sudo dnf install -y x264 x265
-
-    log_info "Installing multimedia group (codec framework)..."
-    try sudo dnf group install -y --with-optional --allowerasing --skip-broken multimedia || \
-    try sudo dnf group install -y --allowerasing --skip-broken multimedia
-
-    log_info "Installing additional codec plugins..."
-    try sudo dnf install -y --skip-unavailable \
-        gstreamer1-plugins-bad-freeworld \
-        gstreamer1-plugins-ugly \
-        gstreamer1-plugin-libav \
-        gstreamer1-plugins-bad-nonfree \
-        libavcodec-freeworld
-
-    log_info "Installing VAAPI hardware video acceleration..."
-    if rpm -q mesa-va-drivers &>/dev/null; then
-        try sudo dnf swap -y mesa-va-drivers mesa-va-drivers-freeworld
-    else
-        try sudo dnf install -y --skip-unavailable mesa-va-drivers-freeworld
-    fi
-    try sudo dnf install -y --skip-unavailable mesa-vdpau-drivers-freeworld
-
-    log_ok "Full multimedia codecs installed."
+    log_info "Installing multimedia codecs..."
+    sudo dnf install -y --allowerasing \
+        ffmpeg gstreamer1-plugins-good gstreamer1-plugins-bad-free \
+        gstreamer1-plugins-bad-freeworld gstreamer1-plugins-ugly \
+        gstreamer1-plugin-openh264 mozilla-openh264 lame x264 x265 || \
+        log_warn "Some multimedia codecs could not be installed automatically."
+    sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing || \
+        log_warn "ffmpeg-free -> ffmpeg swap failed or was not needed."
+    log_ok "Multimedia codecs installed."
 }
 
-# ---------------------------------------------------
-install_nvidia() {
-    local sudo_refresher_pid=""
-
-    if rpm -q akmod-nvidia &>/dev/null; then
-        log_ok "NVIDIA already installed. Skipping."
-        modinfo nvidia &>/dev/null 2>&1 && log_ok "Module loaded" || \
-            log_warn "Module not loaded - run 'sudo akmods --force' after reboot"
-        setup_prime_run
-        return 0
-    fi
-
-    if [[ -t 0 ]]; then
-        read -rp "Install NVIDIA drivers? [Y/n]: " response
-    else
-        response="Y"
-    fi
-    case "$response" in
-        [Nn]*) log_warn "Skipping NVIDIA."; return 0 ;;
-    esac
-
-    log_info "Installing NVIDIA drivers (setara Nobara)..."
-
-    # Core: kernel module (akmod) + driver + CUDA + power management
-    sudo dnf install -y \
-        akmod-nvidia \
-        xorg-x11-drv-nvidia-cuda \
-        xorg-x11-drv-nvidia-power
-
-    while true; do sudo -v; sleep 60; done &
-    sudo_refresher_pid=$!
-
-    # Nobara-equivalent NVIDIA library stack
-    # Di Fedora 44, library NVIDIA sudah included dalam akmod-nvidia / xorg-x11-drv-nvidia-cuda
-    log_info "Installing NVIDIA library stack..."
-    try sudo dnf install -y --skip-unavailable \
-        nvidia-modprobe \
-        nvidia-persistenced \
-        nvidia-settings
-
-    # Wayland EGL
-    log_info "Installing NVIDIA Wayland + VAAPI..."
-    try sudo dnf install -y egl-wayland
-
-    # VAAPI hardware decode — nvidia-vaapi-driver gak ada di Fedora 44, langsung libva-nvidia-driver
-    if sudo dnf install -y libva-nvidia-driver &>/dev/null; then
-        log_ok "libva-nvidia-driver installed (NVIDIA HW decode via VAAPI)"
-    else
-        log_warn "VAAPI not available — software decode fallback"
-    fi
-
-    # DKMS build deps
-    try sudo dnf install -y \
-        gcc make perl \
-        elfutils-libelf-devel \
-        kernel-devel
-
-    log_info "Building kernel module via akmods..."
-    sudo akmods --force
-    log_info "Rebuilding initramfs..."
-    sudo dracut --force
-    log_ok "initramfs rebuilt."
-
-    log_info "Waiting for NVIDIA module build..."
-    local wait_count=0
-    while pgrep -fa "akmods|rpmbuild" >/dev/null 2>&1; do
-        log_info "Building... (${wait_count}s)"
-        sleep 5
-        (( wait_count += 5 ))
-        (( wait_count > 300 )) && { log_warn "Build >5 min"; break; }
-    done
-
-    wait_count=0
-    until modinfo nvidia &>/dev/null 2>&1; do
-        log_info "Waiting module... (${wait_count}s)"
-        sleep 5
-        (( wait_count > 300 )) && { log_warn "Timeout"; break; }
-    done
-
-    log_info "Verifying NVIDIA..."
-    if nvidia-smi &>/dev/null 2>&1; then
-        log_ok "NVIDIA loaded: $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo OK)"
-    elif modinfo -F version nvidia &>/dev/null 2>&1; then
-        log_warn "Module exists but not loaded (normal before reboot)"
-    else
-        log_warn "Module not found - check after reboot"
-    fi
-
-    # Enable nvidia-powerd untuk hybrid GPU power management
-    sudo systemctl enable --now nvidia-powerd 2>/dev/null || true
-
-    setup_prime_run
-    kill "$sudo_refresher_pid" 2>/dev/null || true
+nvidia_installed() {
+    rpm -q akmod-nvidia xorg-x11-drv-nvidia &>/dev/null || command -v nvidia-smi &>/dev/null
 }
 
-# ---------------------------------------------------
 setup_prime_run() {
     if command -v prime-run &>/dev/null; then
-        log_ok "prime-run already available: $(command -v prime-run)"
+        log_ok "prime-run already available."
         return 0
     fi
-
-    log_warn "prime-run tidak ditemukan di PATH. Membuat wrapper manual..."
-
-    sudo tee /usr/local/bin/prime-run > /dev/null << 'PRIMEEOF'
-#!/bin/bash
-# prime-run wrapper — generated by install.sh
-# Jalankan app di NVIDIA dGPU (on-demand)
-# Usage: prime-run <app> [args...]
+    log_info "Creating prime-run wrapper..."
+    sudo bash -c 'cat > /usr/local/bin/prime-run' << 'PRIMEEOF'
+#!/usr/bin/env bash
 __NV_PRIME_RENDER_OFFLOAD=1 \
 __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0 \
 __GLX_VENDOR_LIBRARY_NAME=nvidia \
 __VK_LAYER_NV_optimus=NVIDIA_only \
 "$@"
 PRIMEEOF
-
     sudo chmod +x /usr/local/bin/prime-run
-    log_ok "prime-run wrapper created at /usr/local/bin/prime-run"
+    log_ok "prime-run wrapper created."
 }
 
-# ---------------------------------------------------
-configure_firewalld() {
-    log_info "Configuring firewalld..."
-
-    if ! rpm -q firewalld &>/dev/null; then
-        try sudo dnf install -y firewalld
-    fi
-
-    # Ensure firewalld is enabled and active
-    if ! systemctl is-active firewalld &>/dev/null; then
-        sudo systemctl enable --now firewalld 2>/dev/null || true
-        log_ok "firewalld enabled and started."
-    else
-        log_ok "firewalld already running."
-    fi
-
-    # LocalSend — port 53317 TCP+UDP
-    if firewall-cmd --list-ports 2>/dev/null | grep -q "53317"; then
-        log_ok "Firewall: port 53317 already open."
-    else
-        sudo firewall-cmd --permanent --add-port=53317/tcp 2>/dev/null || true
-        sudo firewall-cmd --permanent --add-port=53317/udp 2>/dev/null || true
-        sudo firewall-cmd --reload 2>/dev/null || true
-        log_ok "Firewall: port 53317 opened (LocalSend)."
-    fi
-
-    # mDNS — device discovery di lokal network
-    if firewall-cmd --list-services 2>/dev/null | grep -q "mdns"; then
-        log_ok "Firewall: mDNS already allowed."
-    else
-        sudo firewall-cmd --permanent --add-service=mdns 2>/dev/null || true
-        sudo firewall-cmd --reload 2>/dev/null || true
-        log_ok "Firewall: mDNS service added."
-    fi
-
-    # Bluetooth
-    if rpm -q bluez &>/dev/null; then
-        if ! systemctl is-active bluetooth &>/dev/null; then
-            sudo systemctl enable --now bluetooth 2>/dev/null || true
-            log_ok "bluetooth enabled."
-        else
-            log_ok "bluetooth already running."
-        fi
-    else
-        log_warn "bluez not installed — bluetooth may not work."
-    fi
-}
-
-# ---------------------------------------------------
-configure_asusctl() {
-    log_info "Configuring asusctl for ASUS TUF..."
-
-    # Check if asusctl is installed
-    if ! command -v asusctl &>/dev/null; then
-        log_warn "asusctl not installed. Skipping configuration."
+install_nvidia() {
+    if nvidia_installed; then
+        log_ok "NVIDIA packages already installed. Skipping."
+        setup_prime_run
         return 0
     fi
 
-    # Conflict check sebelum enable power-profiles-daemon
-    for svc in tlp auto-cpufreq tuned; do
-        if systemctl is-active "${svc}.service" &>/dev/null 2>&1; then
-            log_warn "${svc} aktif — disable dulu agar tidak conflict."
-            sudo systemctl disable --now "${svc}.service" || true
-        fi
-    done
-
-    # Enable services - handle if already enabled
-    sudo systemctl enable --now power-profiles-daemon 2>/dev/null || true
-    sudo systemctl enable --now asusd 2>/dev/null || true
-
-    log_ok "asusctl configured."
-    log_info "  Fan profile  : asusctl profile -P Quiet|Balanced|Performance"
-    log_info "  Battery limit: asusctl -c 80  (charge limit 80%%)"
-}
-
-# ---------------------------------------------------
-# ---------------------------------------------------
-install_snapper() {
-    log_info "Configuring snapper for BTRFS snapshots..."
-
-    # Check if BTRFS
-    if ! findmnt -n -o FSTYPE / | grep -q btrfs; then
-        log_warn "Root filesystem bukan BTRFS. Snapper skip."
+    if ! lspci 2>/dev/null | grep -qi nvidia; then
+        log_info "No NVIDIA GPU detected. Skipping NVIDIA."
         return 0
     fi
 
-    # Check if snapper is installed
-    if ! command -v snapper &>/dev/null; then
-        log_warn "Snapper not installed. Skipping."
-        return 0
-    fi
-
-    # Check if config already exists - handle multiple runs
-    if snapper list-configs 2>/dev/null | grep -q "^root"; then
-        log_ok "Snapper config 'root' already exists. Skipping."
-    else
-        # Create config - might fail if already exists from previous run
-        sudo snapper -c root create-config / 2>/dev/null || \
-            log_warn "Snapper config might already exist."
-        log_ok "Snapper root config created."
-    fi
-
-    sudo snapper -c root set-config \
-        NUMBER_LIMIT=5 \
-        NUMBER_LIMIT_IMPORTANT=3 \
-        TIMELINE_CREATE=yes \
-        TIMELINE_CLEANUP=yes \
-        TIMELINE_LIMIT_HOURLY=3 \
-        TIMELINE_LIMIT_DAILY=5 \
-        TIMELINE_LIMIT_WEEKLY=2 \
-        TIMELINE_LIMIT_MONTHLY=1 \
-        TIMELINE_LIMIT_YEARLY=0
-
-    # DNF5 action plugin — auto snapshot pre/post transaction
-    # Skip di Fedora 41+ — python3-dnf-plugin-snapper rusak dan tidak ada replacement stable
-    # Aktifkan manual nanti kalau sudah fixed, atau gunakan external script
-    log_warn "DNF5 snapper plugin: skipped (not stable in Fedora 41+)"
-    log_info "Alternative: use 'dnf system-upgrade reboot' with automatic snapshots"
-    log_info "Or manually create: /etc/dnf/libdnf5-plugins/actions.d/snapper.actions"
-
-    sudo systemctl enable --now snapper-timeline.timer
-    sudo systemctl enable --now snapper-cleanup.timer
-
-    log_ok "Snapper configured (auto snapshot aktif)."
-
-    # grub-btrfs TIDAK diinstall — banyak masalah di Fedora:
-    #   - Incompatible dengan BLS (BootLoader Spec)
-    #   - /boot ext4 tidak termasuk snapshot
-    #   - Submenu sering tidak muncul
-    #   - @ prefix bermasalah
-    # Kalau butuh boot-from-snapshot, setup manual nanti lewat:
-    #   https://github.com/Antynea/grub-btrfs
-}
-
-# ---------------------------------------------------
-install_mangowm() {
-    # Check if Terra repo is available
-    if ! rpm -q terra-release &>/dev/null; then
-        log_warn "Terra repo not found — cannot install MangoWM/Noctalia"
-        log_warn "Please add Terra repo first: sudo dnf install --nogpgcheck --repofrompath 'terra,https://repos.fyralabs.com/terra\$releasever' terra-release"
-        if [[ -t 0 ]]; then
-            read -rp "Install only SDDM (without MangoWM/Noctalia)? [Y/n]: " response
-        else
-            response="Y"
-        fi
-        case "$response" in
-            [Nn]*) return 0 ;;
-        esac
-        install_sddm
-        return 0
-    fi
-
-    # Check if already installed
-    if rpm -q mangowm &>/dev/null; then
-        log_ok "MangoWM already installed. Skipping."
-        install_sddm
-        return 0
-    fi
-
-    if [[ -t 0 ]]; then
-        read -rp "Install MangoWM + Noctalia from Terra? [Y/n]: " response
-    else
-        response="Y"
-    fi
+    read -rp "Install RPM Fusion NVIDIA drivers for RTX 3050 Mobile? [Y/n]: " response
     case "$response" in
-        [Nn]*)
-            log_warn "Skipping MangoWM/Noctalia installation."
-            install_sddm
-            return 0
-            ;;
+        [Nn]*) log_warn "Skipping NVIDIA."; return 0 ;;
     esac
 
-    log_info "Installing MangoWM and Noctalia from Terra repo..."
+    dnf_install_required akmod-nvidia xorg-x11-drv-nvidia xorg-x11-drv-nvidia-cuda nvidia-settings libva-nvidia-driver
 
-    # Core WM packages from Terra
-    sudo dnf install -y \
-        mangowm \
-        noctalia-shell \
-        noctalia-qs
+    sudo bash -c 'cat > /etc/modprobe.d/99-nvidia-wayland.conf' << 'EOF'
+# NVIDIA Wayland KMS
+options nvidia-drm modeset=1 fbdev=1
+EOF
+    sudo mkdir -p /etc/environment.d
+    sudo bash -c 'cat > /etc/environment.d/90-wayland-session.conf' << 'EOF'
+# Wayland-friendly defaults. NVIDIA offload is handled by prime-run only.
+MOZ_ENABLE_WAYLAND=1
+XCURSOR_THEME=Bibata-Modern-Ice
+XCURSOR_SIZE=24
+EOF
 
-    # Required dependencies for MangoWM/Noctalia (Fedora packages)
-    sudo dnf install -y \
-        qt5ct qt6ct \
-        grim slurp \
-        brightnessctl \
-        cliphist \
-        wlsunset \
-        ImageMagick \
-        xdg-desktop-portal-wlr xdg-desktop-portal-gtk \
-        google-noto-color-emoji-fonts \
-        jq python3
+    sudo akmods --force 2>/dev/null || true
+    setup_prime_run
+    log_ok "NVIDIA installed/configured. Reboot required."
+}
 
-    # Wayland core (libwayland-* already pulled as deps)
-    sudo dnf install -y \
-        libinput \
-        libxkbcommon \
-        seatd \
-        libdisplay-info || true
+install_mangowm() {
+    log_info "Installing MangoWM + Noctalia..."
+    if ! command -v mango &>/dev/null && ! command -v mangowm &>/dev/null && ! command -v mangowc &>/dev/null; then
+        dnf_install_required mangowm
+    fi
+    sudo dnf install -y --allowerasing noctalia-shell || \
+        log_warn "Noctalia Shell could not be installed automatically."
 
-    # NVIDIA/AMD graphics packages (ensure Xorg drivers)
-    sudo dnf install -y \
-        xorg-x11-drv-amdgpu \
-        xorg-x11-drv-nvidia-cuda || true
+    local mango_cmd=""
+    if command -v mango &>/dev/null; then
+        mango_cmd="$(command -v mango)"
+    elif command -v mangowm &>/dev/null; then
+        mango_cmd="$(command -v mangowm)"
+    elif command -v mangowc &>/dev/null; then
+        mango_cmd="$(command -v mangowc)"
+    fi
 
-    # SDDM
-    sudo dnf install -y \
-        sddm-x11 qt6-qtdeclarative qt6-qtsvg qt6-qtquickcontrols2
+    if [[ -z "$mango_cmd" ]]; then
+        log_warn "MangoWM/MangoWC binary not found. SDDM will not be enabled."
+        return 0
+    fi
 
-    log_ok "MangoWM + Noctalia installed from Terra."
-
+    sudo mkdir -p /usr/share/wayland-sessions
+    sudo bash -c "cat > /usr/share/wayland-sessions/mangowm.desktop" << DESKTOPEOF
+[Desktop Entry]
+Name=MangoWM
+Comment=Mango Wayland Compositor
+Exec=${mango_cmd}
+Type=Application
+DesktopNames=MangoWM
+DESKTOPEOF
+    log_ok "MangoWM session file created."
     install_sddm
 }
 
-# ---------------------------------------------------
 install_sddm() {
     log_info "Configuring SDDM..."
-
-    # Check if SDDM is installed
-    if ! rpm -q sddm &>/dev/null; then
-        # Use sddm-x11 to ensure cursor works on hybrid GPUs
-        if rpm -q sddm-wayland-generic &>/dev/null; then
-            sudo dnf swap -y sddm-wayland-generic sddm-x11 2>/dev/null || sudo dnf remove -y sddm-wayland-generic
-        fi
-        sudo dnf install -y sddm-x11 qt6-qtdeclarative qt6-qtsvg qt6-qtquickcontrols2 || {
-            sudo dnf install -y sddm qt6-qtdeclarative qt6-qtsvg qt6-qtquickcontrols2 || {
-                log_warn "SDDM installation failed. Skipping SDDM configuration."
-                return 0
-            }
-        }
-    fi
-
-    # Copy bundled SDDM theme (Clockwork/Orbital)
-    local sddm_src="${SCRIPT_DIR}/dotfiles/sddm/orbital"
-    if [[ -d "$sddm_src" ]]; then
-        sudo mkdir -p /usr/share/sddm/themes
-        if [[ -d "/usr/share/sddm/themes/orbital" ]]; then
-            log_ok "SDDM theme 'orbital' already exists. Skipping."
-        else
-            sudo cp -r "$sddm_src" "/usr/share/sddm/themes/orbital"
-            log_ok "SDDM theme 'orbital' (Clockwork) copied."
-        fi
-    fi
-
+    dnf_install_required sddm qt6-qtdeclarative xorg-x11-server-Xorg
     sudo mkdir -p /etc/sddm.conf.d
-
-    # Get current username - handle if USER is empty
     local current_user="${USER:-$(whoami)}"
-
-    # Only configure if not already configured correctly
-    if [[ -f /etc/sddm.conf.d/10-mango.conf ]]; then
-        log_ok "SDDM already configured. Skipping."
-    else
-        sudo tee /etc/sddm.conf.d/10-mango.conf > /dev/null << SDDMEOF
+    sudo bash -c 'cat > /etc/sddm.conf.d/10-mango.conf' << SDDMEOF
 [General]
 InputMethod=none
 Numlock=on
-HaltCommand=/usr/bin/systemctl poweroff
-RebootCommand=/usr/bin/systemctl reboot
 DefaultUser=$current_user
-UserAuthFile=.Xauthority
 
 [Theme]
-Current=orbital
-
-[Cursor]
-Theme=Bibata-Modern-Classic
-Size=24
-
-[Users]
-MaximumUid=60000
-MinimumUid=1000
-
-[Wayland]
-Enable=false
+Current=
 
 [X11]
 Enable=true
+
+[Wayland]
+Enable=true
+SessionDir=/usr/share/wayland-sessions
 SDDMEOF
-        log_ok "SDDM configured — username: $current_user, theme: orbital"
-    fi
-
-    if systemctl is-enabled sddm.service &>/dev/null 2>&1; then
-        log_ok "SDDM service already enabled."
-    else
-        sudo systemctl enable sddm --force
-        log_ok "SDDM enabled."
-    fi
-
-    # Boot langsung ke SDDM, bukan TTY
-    sudo systemctl set-default graphical.target
-    log_ok "Default target: graphical.target"
-
-    for dm in gdm lightdm lxdm greetd plasmalogin; do
+    sudo systemctl enable sddm --force 2>/dev/null || true
+    sudo systemctl set-default graphical.target 2>/dev/null || true
+    for dm in gdm lightdm lxdm greetd xdm; do
         if systemctl is-enabled "${dm}.service" &>/dev/null 2>&1; then
-            log_info "Disabling conflicting display manager: ${dm}"
-            sudo systemctl disable "${dm}.service" || true
+            sudo systemctl disable "${dm}.service" 2>/dev/null || true
         fi
     done
-
-    log_ok "SDDM complete."
-    log_info "  - Auto-login: YES (langsung masuk)"
-    log_info "  - Session: MangoWM"
-    log_info "  - Cursor: works (Wayland enabled)"
+    log_ok "SDDM enabled as display manager."
 }
 
-# ---------------------------------------------------
-# ---------------------------------------------------
-copy_dotfiles() {
-    log_info "Copying dotfiles to ~/.config/..."
+configure_firewalld() {
+    log_info "Configuring firewalld..."
+    sudo systemctl enable --now firewalld 2>/dev/null || true
+    sudo firewall-cmd --permanent --add-service=mdns 2>/dev/null || true
+    sudo firewall-cmd --permanent --add-port=53317/tcp 2>/dev/null || true
+    sudo firewall-cmd --permanent --add-port=53317/udp 2>/dev/null || true
+    sudo firewall-cmd --reload 2>/dev/null || true
+    log_ok "Firewalld configured."
+}
 
-    mkdir -p ~/.config
+install_tela_icon_theme() {
+    log_info "Installing Tela icon theme..."
+    if ls ~/.local/share/icons/Tela* &>/dev/null 2>&1 || ls /usr/share/icons/Tela* &>/dev/null 2>&1; then
+        log_ok "Tela already installed."
+        return 0
+    fi
+    local temp_dir="/tmp/tela-icon-theme"
+    rm -rf "$temp_dir"
+    if git clone --depth 1 https://github.com/vinceliuice/Tela-icon-theme.git "$temp_dir"; then
+        (cd "$temp_dir" && ./install.sh -a) || log_warn "Tela install script failed"
+        rm -rf "$temp_dir"
+        log_ok "Tela icon theme installed."
+    else
+        log_warn "Failed to clone Tela. Skipping."
+    fi
+}
 
-    local dirs=(
-        btop fish gtk-3.0 gtk-4.0 kitty mango
-        noctalia nvim qt5ct qt6ct
-        telegram-desktop xdg-desktop-portal yazi zed
-    )
-
-    # Copy user-dirs.dirs (file, bukan directory)
-    local user_dirs_src="${DOTFILES_DIR}/user-dirs.dirs"
-    if [[ -f "$user_dirs_src" ]] && [[ ! -f "${HOME}/.config/user-dirs.dirs" ]]; then
-        cp "$user_dirs_src" "${HOME}/.config/user-dirs.dirs" 2>/dev/null || true
-        log_ok "Copied user-dirs.dirs"
+install_bibata_cursor() {
+    log_info "Installing Bibata cursor..."
+    if ls ~/.local/share/icons/Bibata* &>/dev/null 2>&1 || ls /usr/share/icons/Bibata* &>/dev/null 2>&1; then
+        log_ok "Bibata cursor already installed."
+        return 0
     fi
 
+    log_info "Installing Bibata cursor from GitHub..."
+    local temp_dir="/tmp/bibata-cursor"
+    rm -rf "$temp_dir"
+    if git clone --depth 1 https://github.com/ful1e5/Bibata_Cursor.git "$temp_dir"; then
+        mkdir -p "$HOME/.local/share/icons"
+        if [[ -d "$temp_dir/themes" ]]; then
+            cp -r "$temp_dir"/themes/Bibata-* "$HOME/.local/share/icons/" 2>/dev/null || true
+        fi
+        if ! ls "$HOME/.local/share/icons"/Bibata* &>/dev/null 2>&1 && [[ -x "$temp_dir/install.sh" ]]; then
+            (cd "$temp_dir" && ./install.sh -d "$HOME/.local/share/icons") 2>/dev/null || true
+        fi
+        rm -rf "$temp_dir"
+    fi
+
+    if ls ~/.local/share/icons/Bibata* &>/dev/null 2>&1 || ls /usr/share/icons/Bibata* &>/dev/null 2>&1; then
+        log_ok "Bibata cursor installed."
+    else
+        log_warn "Bibata cursor unavailable. Cursor theme may fall back to Fedora default."
+    fi
+}
+
+setup_nerd_fonts() {
+    log_info "Installing Nerd Fonts..."
+    local temp_dir fonts_dir
+    fonts_dir="$HOME/.local/share/fonts"
+    mkdir -p "$fonts_dir"
+    temp_dir="$(mktemp -d)"
+    for font in JetBrainsMono FiraCode; do
+        local tmp_zip="$temp_dir/${font}.zip"
+        if curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${font}.zip" -o "$tmp_zip"; then
+            unzip -qo "$tmp_zip" -d "$temp_dir/${font}" 2>/dev/null
+            find "$temp_dir/${font}" -maxdepth 1 \( -name '*.ttf' -o -name '*.otf' \) -exec cp {} "$fonts_dir/" \; 2>/dev/null || true
+            log_ok "${font} Nerd Font installed."
+        else
+            log_warn "Failed to download ${font} Nerd Font."
+        fi
+    done
+    rm -rf "$temp_dir"
+    fc-cache -fv "$fonts_dir" &>/dev/null || true
+    log_ok "Font cache updated."
+}
+
+configure_asus_laptop() {
+    log_info "Configuring ASUS laptop helpers..."
+    if [[ -d /sys/devices/platform/asus-nb-wmi ]] || [[ -d /sys/devices/platform/asus-wmi ]] || grep -qi "ASUSTeK" /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+        log_ok "ASUS laptop detected."
+    else
+        log_info "ASUS laptop not detected. Skipping."
+        return 0
+    fi
+    if ! command -v asusctl &>/dev/null && ! rpm -q asusctl &>/dev/null; then
+        log_info "Trying ASUS Linux COPR..."
+        sudo dnf copr enable -y lukenukem/asus-linux 2>/dev/null || true
+    fi
+    if [[ -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo ]] && \
+       ! grep -q '^priority=' /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo 2>/dev/null; then
+        sudo sed -i '/^\[copr:copr.fedorainfracloud.org:lukenukem:asus-linux/ a priority=110' \
+            /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo 2>/dev/null || true
+    fi
+    sudo systemctl enable --now asusd 2>/dev/null || true
+    log_ok "ASUS laptop helper setup complete."
+}
+
+copy_dotfiles() {
+    log_info "Copying dotfiles to ~/.config/..."
+    mkdir -p ~/.config
+    local dirs=(btop clean fish gtk-3.0 gtk-4.0 kitty mango noctalia nvim qt5ct qt6ct xdg-desktop-portal yazi zed zen)
     local backup_dir=""
-    # Only create backup if we actually have existing configs
-    local has_existing=false
+    local dir
     for dir in "${dirs[@]}"; do
         if [[ -d "${HOME}/.config/${dir}" ]]; then
-            has_existing=true
+            backup_dir="${HOME}/.config-backup-$(date +%Y%m%d%H%M%S)"
+            mkdir -p "$backup_dir"
             break
         fi
     done
-    if [[ "$has_existing" == "true" ]]; then
-        backup_dir="${HOME}/.config-backup-$(date +%Y%m%d%H%M%S)"
-        mkdir -p "$backup_dir"
-    fi
-
     for dir in "${dirs[@]}"; do
         local src="${DOTFILES_DIR}/${dir}"
         local dst="${HOME}/.config/${dir}"
-
-        if [[ -d "$src" ]]; then
-            # Backup config lama sebelum overwrite
-            if [[ -d "$dst" ]] && [[ -n "$backup_dir" ]]; then
-                mv "$dst" "${backup_dir}/${dir}"
-                log_info "Backed up ${dir} -> ${backup_dir}/${dir}"
-            fi
-            cp -r "$src" "$dst"
-            log_ok "Copied ${dir}"
-        else
-            log_warn "Source dotfiles not found: ${src} (skip)"
+        [[ -d "$src" ]] || { log_warn "Dotfiles source not found: ${src}"; continue; }
+        if [[ -d "$dst" && -n "$backup_dir" ]]; then
+            mv "$dst" "${backup_dir}/${dir}"
+            log_info "Backed up ${dir}"
         fi
+        cp -r "$src" "$dst"
+        log_ok "Copied ${dir}"
     done
-
-    if [[ -d "$backup_dir" ]]; then
-        log_ok "Old configs backed up to: ${backup_dir}"
-    fi
-
-    log_ok "Dotfiles copied."
+    [[ -n "$backup_dir" ]] && log_ok "Old configs backed up to: ${backup_dir}"
 }
 
-# ---------------------------------------------------
 copy_wallpapers() {
-    if [[ ! -d "$WALLPAPERS_DIR" ]]; then
-        log_warn "Wallpapers directory not found. Skipping."
-        return 0
-    fi
-
-    local dst="${HOME}/Pictures/Wallpapers"
-    mkdir -p "$dst"
-    cp -r "${WALLPAPERS_DIR}"/* "$dst/"
-    log_ok "Wallpapers copied to ${dst}"
+    [[ -d "$WALLPAPERS_DIR" ]] || { log_warn "Wallpapers dir not found."; return 0; }
+    mkdir -p "$HOME/Pictures/Wallpapers"
+    cp -r "$WALLPAPERS_DIR"/* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+    log_ok "Wallpapers copied."
 }
 
-# ---------------------------------------------------
 copy_docker_db() {
     local src="${SCRIPT_DIR}/docker-db"
     local dst="${HOME}/Projects/docker-db"
-    if [[ ! -d "$src" ]]; then
-        log_warn "docker-db directory not found. Skipping."
-        return 0
-    fi
-    mkdir -p "$dst"
-    cp -r "${src}"/* "$dst/"
-    log_ok "docker-db copied to ${dst}"
+    [[ -d "$src" ]] || { log_warn "docker-db dir not found."; return 0; }
+    mkdir -p "$(dirname "$dst")"
+    [[ -d "$dst" ]] && { log_ok "docker-db already exists."; return 0; }
+    cp -r "$src" "$dst"
+    log_ok "docker-db copied."
 }
 
-# ---------------------------------------------------
-setup_fish() {
-    log_info "Setting up Fish shell..."
+patch_copied_dotfiles() {
+    log_info "Patching copied dotfiles for Fedora/current user..."
+    rm -f "$HOME/.config/fish/fish_variables" 2>/dev/null || true
+    local file
+    for file in "$HOME/.config/noctalia/settings.json" "$HOME/.config/kitty/sessions/config.session"; do
+        [[ -f "$file" ]] && sed -i "s|/home/mindset|$HOME|g; s|arch-config|fedora-mydotfiles|g; s|opensuse-mydotfiles|fedora-mydotfiles|g" "$file" 2>/dev/null || true
+    done
+    find "$HOME/.config/mango/bin" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
+    chmod +x "$HOME/.config/mango/autostart.sh" "$HOME/.config/clean/clean.sh" 2>/dev/null || true
+    log_ok "Dotfiles patched."
+}
 
-    if ! command -v fish &>/dev/null; then
-        log_warn "Fish not installed. Skipping."
-        return 0
-    fi
-
-    log_ok "Fish already installed."
-
-    mkdir -p ~/.config/fish
-
-    if [[ -f ~/.config/fish/config.fish ]]; then
-        cp ~/.config/fish/config.fish ~/.config/fish/config.fish.bak.$(date +%Y%m%d) 2>/dev/null || true
-    fi
-
+setup_shell() {
+    dnf_install_required fish
+    command -v fish &>/dev/null || { log_warn "Fish not installed."; return 0; }
     local fish_path
-    fish_path=$(command -v fish)
+    fish_path="$(command -v fish)"
     if [[ "$SHELL" != "$fish_path" ]]; then
-        sudo chsh -s "$fish_path" "$USER" || log_warn "chsh failed — manual: chsh -s $fish_path"
-        log_ok "Fish set as default shell."
-    else
-        log_ok "Fish already default shell."
+        sudo chsh -s "$fish_path" "$USER" 2>/dev/null || log_warn "chsh failed - manual: chsh -s $fish_path"
     fi
+    log_ok "Fish shell configured."
 }
 
 setup_mise() {
     log_info "Installing mise..."
-
-    if command -v mise &>/dev/null; then
-        log_ok "mise already installed: $(mise --version 2>/dev/null || true)"
-        return 0
-    fi
-
-    if ! command -v curl &>/dev/null; then
-        log_warn "curl not installed. Skipping mise."
-        return 0
-    fi
-
-    # Metode resmi: curl https://mise.run | sh
-    # GPG signature verification sudah deprecated — installer sekarang pakai SHA256 checksum built-in
-    # Ref: https://mise.jdx.dev/getting-started.html
-    log_info "Downloading and running mise installer..."
-    if curl https://mise.run | sh 2>/dev/null; then
-        log_ok "mise installed."
-    else
-        log_warn "mise install failed — bisa coba manual: curl https://mise.run | sh"
-    fi
+    command -v mise &>/dev/null && { log_ok "mise already installed."; return 0; }
+    curl https://mise.run | sh 2>/dev/null || { log_warn "mise install failed."; return 0; }
+    log_ok "mise installed."
 }
 
-# ---------------------------------------------------
 set_kitty_default() {
-    log_info "Setting Kitty as default terminal..."
-
-    if ! command -v kitty &>/dev/null; then
-        log_warn "Kitty not installed. Skipping."
-        return 0
-    fi
-
-    # Register kitty as alternative first (idempotent), then set it
-    if ! sudo update-alternatives --display x-terminal-emulator 2>/dev/null | grep -q kitty; then
-        sudo update-alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/kitty 50 2>/dev/null || true
-    fi
-    sudo update-alternatives --set x-terminal-emulator /usr/bin/kitty 2>/dev/null || \
-    sudo alternatives --set x-terminal-emulator /usr/bin/kitty 2>/dev/null || \
-        sudo ln -sf /usr/bin/kitty /usr/local/bin/x-terminal-emulator 2>/dev/null || \
-        log_warn "Gagal set default terminal. Manual: sudo ln -sf /usr/bin/kitty /usr/local/bin/x-terminal-emulator"
-
-    local kde_desktop_file="/usr/share/applications/org.kde.konsole.desktop"
-    if [[ -f "$kde_desktop_file" ]]; then
-        sudo mv "$kde_desktop_file" "${kde_desktop_file}.disabled" 2>/dev/null || true
-    fi
-
-    local gnome_desktop_file="/usr/share/applications/org.gnome.Terminal.desktop"
-    if [[ -f "$gnome_desktop_file" ]]; then
-        sudo mv "$gnome_desktop_file" "${gnome_desktop_file}.disabled" 2>/dev/null || true
-    fi
-
+    command -v kitty &>/dev/null || { log_warn "Kitty not installed."; return 0; }
+    sudo alternatives --install /usr/bin/x-terminal-emulator x-terminal-emulator /usr/bin/kitty 50 2>/dev/null || true
+    xdg-mime default kitty.desktop x-scheme-handler/terminal 2>/dev/null || true
     log_ok "Kitty set as default terminal."
 }
 
-# ---------------------------------------------------
 create_user_folders() {
     log_info "Creating standard user folders..."
-
-    # Install xdg-user-dirs if not exists
-    sudo dnf install -y xdg-user-dirs 2>/dev/null || true
-
-    # Update/create standard folders
-    xdg-user-dirs-update 2>/dev/null || {
-        # Manual create if xdg-user-dirs fails
-        local folders=(
-            "$HOME/Downloads"
-            "$HOME/Documents"
-            "$HOME/Pictures"
-            "$HOME/Music"
-            "$HOME/Videos"
-            "$HOME/Desktop"
-        )
-
-        for folder in "${folders[@]}"; do
-            if [[ ! -d "$folder" ]]; then
-                mkdir -p "$folder"
-                log_ok "Created: $folder"
-            fi
-        done
-    }
-
-    log_ok "User folders created/updated."
-    log_info "  Downloads, Documents, Pictures, Music, Videos, Desktop"
+    mkdir -p "$HOME/Downloads" "$HOME/Documents" "$HOME/Pictures/Wallpapers" "$HOME/Music" "$HOME/Videos" "$HOME/Desktop" "$HOME/Projects"
+    log_ok "User folders created."
 }
 
-# ---------------------------------------------------
-set_repo_priorities() {
-    log_info "Setting repository priorities (official > copr > terra)..."
-    local priorities=(
-        "fedora:10"
-        "updates:10"
-        "fedora-cisco-openh264:15"
-        "rpmfusion-free:20"
-        "rpmfusion-free-updates:20"
-        "rpmfusion-nonfree:20"
-        "rpmfusion-nonfree-updates:20"
-        "rpmfusion-free-tainted:25"
-        "*copr*:50"
-        "terra:200"
-    )
-    for entry in "${priorities[@]}"; do
-        local repo="${entry%%:*}"
-        local prio="${entry##*:}"
-        if [[ "$repo" == "*copr*" ]]; then
-            for copr_repo in /etc/yum.repos.d/_copr_*.repo; do
-                [[ -f "$copr_repo" ]] || continue
-                local name
-                name=$(grep -oP '^\[copr:\K[^\]]+' "$copr_repo" 2>/dev/null | head -1)
-                [[ -n "$name" ]] && sudo dnf config-manager --setopt="copr:${name}.priority=$prio" --save 2>/dev/null || true
-            done
-        else
-            if [[ -f "/etc/yum.repos.d/${repo}.repo" ]]; then
-                sudo dnf config-manager --setopt="${repo}.priority=${prio}" --save 2>/dev/null || true
-            fi
-        fi
-    done
-    log_ok "Repository priorities configured."
+enable_services() {
+    log_info "Enabling system services..."
+    sudo systemctl enable --now NetworkManager firewalld chronyd tuned switcheroo-control bluetooth acpid 2>/dev/null || true
+    sudo systemctl enable --now fstrim.timer 2>/dev/null || true
+    systemctl --user enable --now podman.socket 2>/dev/null || true
+    systemctl --user enable --now pipewire.socket pipewire-pulse.socket wireplumber 2>/dev/null || true
+    log_ok "Services enabled."
 }
 
-# ---------------------------------------------------
+setup_flathub() {
+    if flatpak remotes 2>/dev/null | grep -qi flathub; then
+        log_ok "Flathub already configured."
+        return 0
+    fi
+    sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo 2>/dev/null || true
+    log_ok "Flathub configured."
+}
+
 cleanup() {
     log_info "Cleaning up..."
-    sudo dnf autoremove -y
-    sudo dnf clean all
-    log_ok "Cleanup complete."
+    sudo dnf clean all 2>/dev/null || true
+    log_ok "Cleanup done."
 }
 
-# ---------------------------------------------------
 main() {
     preflight_checks
-    enable_multilib
-    configure_dnf
-    add_repositories
-    set_repo_priorities
+    setup_repos
     install_packages
     install_multimedia
     install_nvidia
-    configure_firewalld
-    configure_asusctl
-    install_snapper
+
+    read -rp "Configure firewalld? [Y/n]: " fw
+    case "$fw" in
+        [Nn]*) log_warn "Skipping firewalld." ;;
+        *) configure_firewalld ;;
+    esac
+
     install_mangowm
+    install_tela_icon_theme
+    install_bibata_cursor
+    setup_nerd_fonts
+    configure_asus_laptop
+    setup_flathub
     copy_dotfiles
     copy_wallpapers
     copy_docker_db
-    setup_fish
+    patch_copied_dotfiles
+    setup_shell
     setup_mise
     set_kitty_default
     create_user_folders
+    enable_services
     cleanup
 
     echo ""
-    log_ok "Installation complete!"
-    echo ""
-    log_info "Setelah reboot: SDDM → MangoWM"
-    log_info "Kemudian jalankan: ./apps.sh && ./gaming.sh"
-    echo ""
+    log_ok "Fedora core setup complete."
+    log_info "Log saved to: ${LOG_FILE}"
+    log_info "After reboot: select MangoWM in SDDM."
+    log_info "NVIDIA hybrid check: nvidia-smi; run dGPU apps with: prime-run <app>"
     log_info "Reboot: sudo reboot"
-    echo ""
 }
 
 main "$@"

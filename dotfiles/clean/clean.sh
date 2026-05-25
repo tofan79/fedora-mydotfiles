@@ -1,56 +1,88 @@
-#!/bin/bash
-# clean.sh — System cleanup for Fedora
+#!/usr/bin/env bash
+# Safe cleanup for Fedora.
+set -euo pipefail
 
 echo "========================================="
-echo "        FEDORA SYSTEM CLEANUP"
+echo "            FEDORA CLEANUP"
 echo "========================================="
 
-echo -e "\n[1/10] DNF cache..."
-sudo dnf clean all 2>/dev/null && echo "  ✔ DNF cache cleaned"
-sudo rm -rf /var/cache/dnf/* 2>/dev/null && echo "  ✔ DNF package cache wiped"
+echo
+echo "[1/10] DNF cache..."
+sudo dnf clean all 2>/dev/null && echo "  OK: dnf cache cleaned"
+rm -rf "$HOME/.cache/libdnf5"/* "$HOME/.cache/dnf"/* 2>/dev/null || true
 
-echo -e "\n[2/10] Orphan packages..."
-sudo dnf autoremove -y 2>/dev/null && echo "  ✔ Orphan packages removed"
+echo
+echo "[2/10] Orphan packages review..."
+if sudo dnf repoquery --extras 2>/dev/null | awk 'NF { found=1 } END { exit !found }'; then
+    echo "  Extra/orphan-like packages exist. Review manually before removing:"
+    echo "  sudo dnf repoquery --extras"
+else
+    echo "  OK: no extras reported"
+fi
 
-echo -e "\n[3/10] Dev caches..."
-[[ -d ~/.cache/go-build ]] && rm -rf ~/.cache/go-build/* && echo "  ✔ Go build cache cleaned"
-[[ -d ~/.cache/pip ]] && rm -rf ~/.cache/pip && echo "  ✔ pip cache cleaned"
-[[ -d ~/.cache/npm ]] && rm -rf ~/.cache/npm/* && echo "  ✔ npm cache cleared"
+echo
+echo "[3/10] Flatpak cache..."
+if command -v flatpak >/dev/null 2>&1; then
+    flatpak uninstall --unused -y 2>/dev/null || true
+    rm -rf "$HOME/.var/app"/*/cache/* 2>/dev/null || true
+fi
+echo "  OK: flatpak cache checked"
 
-echo -e "\n[4/10] mise cache..."
-rm -rf ~/.local/share/mise/http-tarballs/* 2>/dev/null && echo "  ✔ mise tarballs cleaned"
-mise cache clear 2>/dev/null && echo "  ✔ mise cache cleared"
+echo
+echo "[4/10] Dev caches..."
+rm -rf "$HOME/.cache/go-build"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/pip" 2>/dev/null || true
+rm -rf "$HOME/.cache/npm"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/yarn"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/pnpm"/* 2>/dev/null || true
+echo "  OK: dev caches cleaned"
 
-echo -e "\n[5/10] JetBrains Toolbox cache..."
-rm -rf ~/.local/share/JetBrains/Toolbox/cache/* 2>/dev/null && echo "  ✔ Toolbox cache cleaned"
-rm -rf ~/.cache/JetBrains/* 2>/dev/null && echo "  ✔ JetBrains cache cleaned"
+echo
+echo "[5/10] mise cache..."
+rm -rf "$HOME/.local/share/mise/http-tarballs"/* 2>/dev/null || true
+if command -v mise >/dev/null 2>&1; then
+    mise cache clear 2>/dev/null || true
+fi
+echo "  OK: mise cache cleaned"
 
-echo -e "\n[6/10] System temp..."
-sudo rm -rf /tmp/* 2>/dev/null
-sudo rm -rf /var/tmp/* 2>/dev/null
-sudo journalctl --vacuum-time=3d 2>/dev/null && echo "  ✔ Old journal logs cleaned"
+echo
+echo "[6/10] App caches..."
+rm -rf "$HOME/.cache/JetBrains"/* 2>/dev/null || true
+rm -rf "$HOME/.local/share/JetBrains/Toolbox/cache"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/opencode"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/zed"/* 2>/dev/null || true
+echo "  OK: app caches cleaned"
 
-echo -e "\n[7/10] Trash..."
-rm -rf ~/.local/share/Trash/* 2>/dev/null && echo "  ✔ Trash cleaned"
+echo
+echo "[7/10] System temp and journal..."
+find /tmp -mindepth 1 -maxdepth 1 -user "$USER" -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+find /var/tmp -mindepth 1 -maxdepth 1 -user "$USER" -mtime +7 -exec rm -rf {} + 2>/dev/null || true
+sudo journalctl --vacuum-time=3d 2>/dev/null || true
+echo "  OK: old user temp files and journal cleaned"
 
-echo -e "\n[8/10] Browser cache..."
-[[ -d ~/.cache/brave-browser ]] && rm -rf ~/.cache/brave-browser/* && echo "  ✔ Brave cache cleaned"
-[[ -d ~/.cache/zen ]] && rm -rf ~/.cache/zen/* && echo "  ✔ Zen cache cleaned"
-[[ -d ~/.cache/chromium ]] && rm -rf ~/.cache/chromium/* && echo "  ✔ Chromium cache cleaned"
+echo
+echo "[8/10] Trash..."
+rm -rf "$HOME/.local/share/Trash/files"/* "$HOME/.local/share/Trash/info"/* 2>/dev/null || true
+echo "  OK: trash cleaned"
 
-echo -e "\n[9/10] Graphics & misc caches..."
-rm -rf ~/.cache/mesa_shader_cache/* 2>/dev/null && echo "  ✔ Mesa shader cache cleaned"
-rm -rf ~/.cache/radv_builtin_shaders/* 2>/dev/null && echo "  ✔ RADV shader cache cleaned"
-rm -rf ~/.cache/nvidia/* 2>/dev/null && echo "  ✔ NVIDIA cache cleaned"
-rm -rf ~/.cache/gtk-4.0/* 2>/dev/null && echo "  ✔ GTK 4 cache cleaned"
-rm -rf ~/.cache/qtshadercache-*/* 2>/dev/null && echo "  ✔ Qt shader cache cleaned"
-rm -rf ~/.cache/opencode/* 2>/dev/null && echo "  ✔ opencode cache cleaned"
+echo
+echo "[9/10] Browser and graphics caches..."
+rm -rf "$HOME/.cache/brave-browser"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/zen"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/chromium"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/mesa_shader_cache"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/radv_builtin_shaders"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/nvidia"/* 2>/dev/null || true
+rm -rf "$HOME/.cache/gtk-4.0"/* 2>/dev/null || true
+rm -rf "$HOME/.cache"/qtshadercache-*/* 2>/dev/null || true
+echo "  OK: browser and graphics caches cleaned"
 
-echo -e "\n[10/10] History + thumbnails..."
-[[ -f ~/.bash_history ]] && > ~/.bash_history && echo "  ✔ bash history cleared"
-[[ -f ~/.local/share/fish/fish_history ]] && > ~/.local/share/fish/fish_history && echo "  ✔ fish history cleared"
-rm -rf ~/.cache/thumbnails/* 2>/dev/null && echo "  ✔ Thumbnail cache cleaned"
+echo
+echo "[10/10] Thumbnails..."
+rm -rf "$HOME/.cache/thumbnails"/* 2>/dev/null || true
+echo "  OK: thumbnail cache cleaned"
 
-echo -e "\n========================================="
+echo
+echo "========================================="
 echo "           CLEANUP COMPLETE"
 echo "========================================="
