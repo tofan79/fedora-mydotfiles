@@ -497,6 +497,32 @@ SDDMEOF
     log_ok "SDDM enabled as display manager."
 }
 
+configure_grub_timeout() {
+    local grub_cfg="/etc/default/grub"
+    if [[ -f "$grub_cfg" ]] && grep -q '^GRUB_TIMEOUT=' "$grub_cfg" 2>/dev/null; then
+        sudo sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/' "$grub_cfg"
+        sudo grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || true
+        log_ok "GRUB timeout set to 5s."
+    fi
+}
+
+configure_logind() {
+    local dir="/etc/systemd/logind.conf.d"
+    sudo mkdir -p "$dir"
+    if [[ ! -f "$dir/90-laptop.conf" ]]; then
+        sudo bash -c 'cat > '"$dir"'/90-laptop.conf' << 'LOGINDEOF'
+[Login]
+HandleLidSwitch=suspend
+HandleLidSwitchExternalPower=suspend
+HandleLidSwitchDocked=ignore
+LOGINDEOF
+        sudo systemctl restart systemd-logind 2>/dev/null || true
+        log_ok "logind: lid suspend configured."
+    else
+        log_ok "logind config already exists."
+    fi
+}
+
 configure_firewalld() {
     log_info "Configuring firewalld..."
     sudo systemctl enable --now firewalld 2>/dev/null || true
@@ -773,6 +799,8 @@ main() {
     install_bibata_cursor
     setup_nerd_fonts
     configure_asus_laptop
+    configure_grub_timeout
+    configure_logind
     setup_snapper
     setup_grub_btrfs
     setup_flathub
