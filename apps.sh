@@ -80,7 +80,7 @@ install_core_app_support() {
         brave-browser telegram-desktop asusctl asusctl-rog-gui
 
     log_info "Installing LocalSend and Zen Browser from Mindset-Apps COPR when available..."
-    dnf_install localsend zen-browser
+    dnf_install localsend zen-browser zed
 
     if command -v podman &>/dev/null; then
         systemctl --user enable --now podman.socket 2>/dev/null || true
@@ -88,14 +88,6 @@ install_core_app_support() {
     fi
     sudo systemctl enable --now asusd 2>/dev/null || true
     log_ok "Core desktop app support installed."
-}
-
-install_zed() {
-    command -v zed &>/dev/null && { log_ok "Zed already installed."; return 0; }
-    log_info "Installing Zed Editor via official script..."
-    curl -f https://zed.dev/install.sh 2>/dev/null | sh -s -- --yes 2>/dev/null || \
-        { log_warn "Zed install failed. Install manually: flatpak install flathub dev.zed.Zed"; return 1; }
-    log_ok "Zed Editor installed (~/.local/bin/zed)."
 }
 
 fix_terminal_desktop() {
@@ -117,7 +109,6 @@ main() {
     preflight_checks
     ensure_repos
     install_core_app_support
-    install_zed
     fix_terminal_desktop
     log_ok "Fedora app support complete. Log: ${LOG_FILE}"
 }
