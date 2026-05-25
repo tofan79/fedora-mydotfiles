@@ -68,7 +68,7 @@ ensure_rpmfusion() {
 install_gaming_packages() {
     log_info "Installing gaming runtime packages..."
     dnf_install \
-        gamemode gamescope mangohud vkBasalt goverlay \
+        gamemode gamescope mangohud mangohud.i686 vkBasalt goverlay \
         wine winetricks protontricks \
         sdl2-compat cabextract 7zip unrar steam \
         mesa-dri-drivers.i686 mesa-vulkan-drivers.i686 vulkan-loader.i686

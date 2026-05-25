@@ -72,7 +72,7 @@ ensure_repos() {
 install_core_app_support() {
     log_info "Installing desktop app support..."
     dnf_install \
-        nautilus gvfs gvfs-fuse gvfs-smb gvfs-gphoto2 gvfs-afc libmtp \
+        nautilus nautilus-python gvfs gvfs-fuse gvfs-smb gvfs-gphoto2 gvfs-afc libmtp \
         yazi neovim btop mpv imv gnome-disk-utility gnome-calculator file-roller seahorse gnome-keyring pavucontrol-qt \
         tesseract tesseract-langpack-eng ImageMagick \
         xdg-desktop-portal-gtk xdg-utils xdg-user-dirs python3-gobject loupe wtype \
