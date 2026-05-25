@@ -1,13 +1,11 @@
 # Fedora My Dotfiles - Daily Driver
 
-Setup Fedora untuk ASUS TUF Gaming A15 FA506ICB dengan MangoWM + Noctalia.
+Setup Fedora 44 untuk ASUS TUF Gaming A15 FA506ICB dengan MangoWM + Noctalia.
 
 Target sistem:
-- Fedora 44
 - AMD Renoir iGPU sebagai GPU default
 - NVIDIA RTX 3050 Mobile sebagai dGPU on-demand lewat `prime-run`
-- MediaTek MT7921 Wi-Fi
-- Realtek RTL8111/8168 LAN
+- MediaTek MT7921 Wi-Fi / Realtek RTL8111/8168 LAN
 - SDDM + MangoWM
 
 ## Cara Pakai
@@ -19,60 +17,69 @@ chmod +x install.sh apps.sh gaming.sh
 ./install.sh
 sudo reboot
 
-# 2. Aplikasi harian
-./apps.sh
-
-# 3. Gaming runtime
+# 2. Gaming runtime (setelah reboot, NVIDIA akmod sudah terload)
 ./gaming.sh
+
+# 3. Aplikasi harian (bisa kapan saja)
+./apps.sh
 ```
 
-`install.sh` adalah core OS saja. Aplikasi besar dan gaming stack dipisah supaya base system tetap minimal tapi siap daily.
+`install.sh` adalah core OS — package critical exit kalau gagal. Aplikasi besar dan gaming stack dipisah supaya base system tetap minimal tapi siap daily.
 
 ## Script
 
-Ketentuan install package di semua script: install via `dnf`, kalau package tidak tersedia script lanjut dengan warning. Ini sengaja, karena beberapa package seperti MangoWM/Noctalia/Zen/asusctl bisa tergantung status repo Terra/COPR saat install.
+Ketentuan install package:
+- **required** (`dnf_install_required`): package vital (mesa, pipewire, driver, WM) — gagal → script berhenti
+- **optional** (`dnf_install_optional`): package pelengkap — gagal → skip + warning
 
 | Script | Fungsi | Jalankan |
 |--------|--------|----------|
-| `install.sh` | DNF config, mirror baseurl, RPM Fusion, Terra, Brave repo, core packages, multimedia codecs, NVIDIA, MangoWM+Noctalia, SDDM, Tela icons, Bibata cursor, ASUS laptop helper, Flathub, dotfiles, wallpapers, docker-db, fish shell, mise, user folders, services | Setelah fresh install Fedora, sebelum dipakai harian |
-| `apps.sh` | Nautilus+GVFS, browser, Neovim, Yazi, Btop, MPV, IMV, GNOME tools, pavucontrol-qt, LocalSend, ASUS tools, dev CLI, desktop entry fix untuk Kitty | Setelah reboot + login |
-| `gaming.sh` | GameMode, Gamescope, MangoHud, vkBasalt, Wine, Winetricks, Protontricks, Steam, Vulkan/i686 runtime, MangoHud config | Setelah apps.sh |
+| `install.sh` | DNF config, mirror baseurl, RPM Fusion, Terra, Brave repo, core packages (required+optional), multimedia codecs, NVIDIA, MangoWM+Noctalia, SDDM, Tela icons, Bibata cursor, ASUS COPR, Flathub, dotfiles, fish shell, mise, services | Setelah fresh install Fedora, **reboot wajib** |
+| `apps.sh` | Nautilus+GVFS, browser, Neovim, Yazi, GNOME tools, LocalSend/Zen (COPR), ASUS tools (COPR), dev CLI, desktop entry fix untuk Kitty | Setelah reboot (kapan saja) |
+| `gaming.sh` | GameMode, Gamescope, MangoHud, vkBasalt, Wine, Winetricks, Steam, Vulkan/i686 32-bit, MangoHud config | **Setelah reboot** (NVIDIA akmod harus terload dulu) |
 
 ## Repos dan Mirror
 
-DNF dikonfigurasi dengan parallel download maksimal 3:
+DNF dikonfigurasi:
 
 ```ini
 [main]
 max_parallel_downloads=3
 defaultyes=True
 keepcache=False
+install_weak_deps=False
 ```
 
-Repo Fedora dan Updates dipaksa memakai `baseurl`, bukan `metalink`/`mirrorlist`. Mirror maksimal 3 dan urutannya:
+Repo Fedora dan Updates dipaksa memakai `baseurl` (bukan `metalink`). Mirror maksimal 3, comma-separated dalam satu baris (DNF5):
 
 1. `https://mirror.nevacloud.com/fedora/fedora-linux`
 2. `https://ftp.jaist.ac.jp/pub/Linux/Fedora`
 3. `https://sg.mirrors.cicku.me/fedora/linux`
 
-Format repo yang ditulis script:
+### Priority Repo
 
-```ini
-baseurl=https://mirror.nevacloud.com/fedora/fedora-linux/...,https://ftp.jaist.ac.jp/pub/Linux/Fedora/...,https://sg.mirrors.cicku.me/fedora/linux/...
-```
+| Priority | Repo |
+|----------|------|
+| **99** (default) | `fedora`, `updates`, `fedora-cisco-openh264`, `rpmfusion-free`, `rpmfusion-nonfree`, `rpmfusion-nvidia`, `rpmfusion-steam`, `brave-browser` |
+| **110** | `copr:asus-linux`, `copr:mindset-apps` |
+| **150** | `terra` |
 
-Repo yang dipakai:
+### Daftar Repo Lengkap
 
-- `fedora`
-- `updates`
-- `fedora-cisco-openh264`
-- `rpmfusion-free`
-- `rpmfusion-nonfree`
-- RPM Fusion NVIDIA/Steam dari repo nonfree
-- `Terra`
-- `Brave`
-- COPR `mindset/Mindset-Apps` for LocalSend and Zen Browser
-- `Flathub`
+| # | Repo | Sumber |
+|---|------|--------|
+| 1 | `fedora` | install.sh (baseurl mirror) |
+| 2 | `updates` | install.sh (baseurl mirror) |
+| 3 | `fedora-cisco-openh264` | install.sh |
+| 4 | `rpmfusion-free` | install.sh |
+| 5 | `rpmfusion-nonfree` | install.sh |
+| 6 | `rpmfusion-nonfree-nvidia-driver` | install.sh (RPM Fusion nonfree) |
+| 7 | `rpmfusion-nonfree-steam` | install.sh (RPM Fusion nonfree) |
+| 8 | `terra` | install.sh + apps.sh (priority 150) |
+| 9 | `brave-browser` | install.sh + apps.sh |
+| 10 | `copr:asus-linux` | install.sh + apps.sh (priority 110) |
+| 11 | `copr:mindset-apps` | apps.sh (priority 110) |
+| — | `flathub` (flatpak) | install.sh |
 
 ## Dotfiles
 
@@ -105,26 +112,32 @@ Saat `install.sh` jalan:
 
 ## install.sh - Core OS
 
-### Core Packages
+### Core Packages (Required — exit if fail)
 
-- Build/tools: `git`, `curl`, `wget2-wget`, `rsync`, `gcc`, `gcc-c++`, `make`, `cmake`, `meson`, `ninja-build`, `ShellCheck`
+- Build/tools: `git`, `curl`, `wget2-wget`, `rsync`, `cmake`, `meson`, `ninja-build`, `ShellCheck`
 - Firmware: `linux-firmware`, `amd-gpu-firmware`, `mt7xxx-firmware`, `realtek-firmware`, `microcode_ctl`
-- Audio firmware/config: `alsa-sof-firmware`, `alsa-ucm`
+- Audio firmware: `alsa-sof-firmware`, `alsa-ucm`
 - Networking: `NetworkManager`, `wpa_supplicant`, `firewalld`, `bluez`, `upower`, `switcheroo-control`
 - Graphics/Wayland: `xorg-x11-server-Xwayland`, `mesa-dri-drivers`, `mesa-vulkan-drivers`, `vulkan-tools`, `mesa-libEGL`, `mesa-libGL`, `qt6-qtwayland`, `qt5-qtwayland`
 - PipeWire audio: `pipewire`, `pipewire-utils`, `pipewire-alsa`, `pipewire-pulseaudio`, `pipewire-jack-audio-connection-kit`, `wireplumber`, `alsa-utils`, `playerctl`
-- VA-API/NVIDIA video: `libva-utils`, `libva-nvidia-driver`
+- VA-API: `libva-utils`
 - Display manager: `sddm`
-- Shell/terminal/CLI: `fish`, `kitty`, `bat`, `fzf`, `zoxide`, `fastfetch`, `jq`, `tmux`, `ripgrep`, `fd-find`, `tree`, `unzip`, `zip`, `bc`, `lsof`, `pciutils`, `usbutils`, `hwinfo`
-- Wayland utilities: `grim`, `slurp`, `wl-clipboard`, `brightnessctl`, `xdg-desktop-portal`, `xdg-desktop-portal-gtk`, `xdg-desktop-portal-wlr`, `xdg-utils`, `libinput`, `libxkbcommon`, `seatd`, `polkit`
-- Fonts: `jetbrains-mono-fonts`, `fontawesome-fonts-all`, `google-noto-sans-fonts`, `google-noto-color-emoji-fonts`, `adobe-source-code-pro-fonts`
-- Qt/GTK theme support: `qt6ct`, `qt5ct`, `gtk3`, `gtk4`, `libadwaita`, `adwaita-icon-theme`, `papirus-icon-theme`, `adw-gtk3-theme`
+- Shell: `fish`, `kitty`
+- Wayland portals: `xdg-desktop-portal`, `xdg-desktop-portal-gtk`, `xdg-desktop-portal-wlr`, `xdg-utils`
+- Input/auth: `libinput`, `libxkbcommon`, `seatd`, `polkit`
 - Platform: `flatpak`
-- Printing packages: `cups`, `cups-filters`
 - Containers/dev: `python3`, `python3-pip`, `python3-devel`, `podman`, `podman-compose`, `podman-docker`, `openssh-clients`, `openssh-server`
-- Filesystem/admin: `exfatprogs`, `ntfs-3g`, `btrfs-progs`, `cifs-utils`, `dosfstools`, `smartmontools`, `logrotate`, `tcpdump`
-- Power/time/acpi: `tuned`, `tuned-ppd`, `chrony`, `acpid`
-- Extra shell/desktop helpers: `eza`, `pamixer`, `wlsunset`, `cliphist`
+- Power/time: `tuned`, `tuned-ppd`, `chrony`, `acpid`
+
+### Core Packages (Optional — skip jika gagal)
+
+- CLI tools: `bat`, `fzf`, `zoxide`, `fastfetch`, `jq`, `tmux`, `ripgrep`, `fd-find`, `tree`, `unzip`, `zip`, `bc`, `lsof`, `pciutils`, `usbutils`, `hwinfo`
+- Wayland helpers: `grim`, `slurp`, `wl-clipboard`, `brightnessctl`
+- Fonts: `jetbrains-mono-fonts`, `fontawesome-fonts-all`, `google-noto-sans-fonts`, `google-noto-color-emoji-fonts`, `adobe-source-code-pro-fonts`
+- Qt/GTK theme: `qt6ct`, `qt5ct`, `gtk3`, `gtk4`, `libadwaita`, `adwaita-icon-theme`, `papirus-icon-theme`, `adw-gtk3-theme`
+- Printing: `cups`, `cups-filters`
+- Filesystem: `exfatprogs`, `ntfs-3g`, `btrfs-progs`, `cifs-utils`, `dosfstools`, `smartmontools`, `logrotate`, `tcpdump`
+- Desktop helpers: `eza`, `pamixer`, `wlsunset`, `cliphist`
 
 ### Multimedia Codecs
 
@@ -149,7 +162,7 @@ sudo dnf swap -y ffmpeg-free ffmpeg --allowerasing
 
 ### NVIDIA - RTX 3050 Mobile
 
-NVIDIA install is optional and prompted by `install.sh`.
+NVIDIA install is optional (prompted). Menggunakan `dnf_install_required` — kalau gagal script berhenti.
 
 Packages:
 
@@ -228,10 +241,10 @@ Behavior:
 
 For ASUS FA506ICB:
 
-- Detects ASUS laptop via `/sys/devices/platform/asus-*` or DMI vendor
-- Tries `asusctl`
-- Falls back to COPR `lukenukem/asus-linux` if `asusctl` is missing
-- Enables `asusd` when available
+- Deteksi via `/sys/devices/platform/asus-*` atau DMI vendor
+- Enable COPR `lukenukem/asus-linux`
+- `asusctl` dan `asusctl-rog-gui` diinstall di apps.sh
+- `asusd` di-enable otomatis
 
 ### Icons, Cursor, Fonts
 
@@ -241,18 +254,20 @@ For ASUS FA506ICB:
 
 ### Services Enabled
 
-- `NetworkManager`
-- `firewalld`
-- `chronyd`
-- `tuned`
-- `switcheroo-control`
-- `bluetooth`
-- `acpid`
-- `fstrim.timer`
-- user `podman.socket`
-- user `pipewire`
-- user `pipewire-pulse`
-- user `wireplumber`
+- `NetworkManager` — network
+- `firewalld` — firewall
+- `chronyd` — time sync
+- `tuned` — power management
+- `switcheroo-control` — hybrid GPU
+- `bluetooth` — bluetooth
+- `acpid` — ACPI events
+- `fstrim.timer` — SSD trim
+- `SDDM` — display manager
+- `asusd` — ASUS laptop (kalau terdeteksi)
+- user `podman.socket` — container
+- user `pipewire.socket` — audio (socket activation)
+- user `pipewire-pulse.socket` — audio (socket activation)
+- user `wireplumber` — audio session manager
 
 ### Firewalld
 
@@ -270,21 +285,18 @@ Packages:
 - Terminal tools: `yazi`, `neovim`, `btop`
 - Media: `mpv`, `imv`
 - GUI utilities: `gnome-disk-utility`, `gnome-calculator`, `file-roller`, `seahorse`, `gnome-keyring`, `pavucontrol-qt`
-- OCR/media support: `tesseract`, `tesseract-langpack-eng`, `ImageMagick`, `ffmpeg`
+- OCR/media: `tesseract`, `tesseract-langpack-eng`, `ImageMagick`
 - Desktop integration: `xdg-desktop-portal-gtk`, `xdg-utils`, `xdg-user-dirs`, `python3-gobject`, `loupe`, `wtype`
-- Dev CLI: `tmux`, `ripgrep`, `fd-find`, `tree`, `ncdu`, `httpie`, `bind-utils`, `whois`, `traceroute`, `mtr`, `socat`, `nmap`, `7zip`, `ShellCheck`, `gh`, `strace`
-- ASUS/browser: `asusctl`, `brave-browser`
+- Dev CLI: `ncdu`, `httpie`, `bind-utils`, `whois`, `traceroute`, `mtr`, `socat`, `nmap`, `gh`, `strace`
+- ASUS/browser: `asusctl`, `asusctl-rog-gui`, `brave-browser`
 - Mindset Apps COPR: `localsend`, `zen-browser`
 
 Other actions:
 
-- Adds Brave repo if missing
-- Enables COPR `mindset/Mindset-Apps` for LocalSend and Zen Browser
-- Adds Terra if missing
-- Enables ASUS COPR fallback if `asusctl` is still missing
-- Enables user `podman.socket`
-- Enables `asusd` when available
-- Patches `.desktop` files for `btop`, `nvim`, and `yazi` to launch through Kitty
+- Enable COPR `mindset/Mindset-Apps` + `lukenukem/asus-linux`
+- Pastikan Brave + Terra repo terdaftar
+- Enable `asusd` saat available
+- Patch `.desktop` files untuk `btop`, `nvim`, `yazi` → launch via Kitty
 
 ## gaming.sh - Gaming Runtime
 
@@ -294,8 +306,8 @@ Packages:
 - Windows compatibility: `wine`, `winetricks`, `protontricks`
 - Runtime/helpers: `sdl2-compat`, `cabextract`, `7zip`, `unrar`
 - Store: `steam`
-- Vulkan 64-bit: `mesa-vulkan-drivers`, `vulkan-loader`, `vulkan-tools`
 - Vulkan/OpenGL 32-bit: `mesa-dri-drivers.i686`, `mesa-vulkan-drivers.i686`, `vulkan-loader.i686`
+- (64-bit Vulkan sudah diinstall oleh install.sh: `mesa-vulkan-drivers`, `vulkan-loader`, `vulkan-tools`)
 
 Why not list every i686 dependency manually:
 
