@@ -346,7 +346,7 @@ install_packages() {
         cups cups-filters
         exfatprogs ntfs-3g btrfs-progs cifs-utils dosfstools smartmontools logrotate tcpdump
         eza pamixer wlsunset cliphist adw-gtk3-theme
-        lm_sensors snapper dnf-plugin-snapper
+        lm_sensors snapper python3-dnf-plugin-snapper
     )
 
     dnf_install_required "${core_required[@]}"
@@ -607,6 +607,22 @@ setup_snapper() {
     log_ok "Snapper configured (number-based cleanup, timeline disabled)."
 }
 
+setup_grub_btrfs() {
+    if ! command -v grub-btrfsd &>/dev/null; then
+        log_info "Installing grub-btrfs from GitHub..."
+        local tmpdir
+        tmpdir=$(mktemp -d)
+        (
+            git clone -q --depth=1 https://github.com/Antynea/grub-btrfs.git "$tmpdir/grub-btrfs" 2>/dev/null && \
+            cd "$tmpdir/grub-btrfs" && \
+            sudo make install 2>/dev/null
+        ) || { log_warn "grub-btrfs install failed. Skipping."; rm -rf "$tmpdir"; return 1; }
+        rm -rf "$tmpdir"
+    fi
+    sudo systemctl enable --now grub-btrfsd 2>/dev/null || true
+    log_ok "grub-btrfs: GRUB now shows Btrfs snapshots."
+}
+
 configure_asus_laptop() {
     log_info "Configuring ASUS laptop helpers..."
     if [[ -d /sys/devices/platform/asus-nb-wmi ]] || [[ -d /sys/devices/platform/asus-wmi ]] || grep -qi "ASUSTeK" /sys/class/dmi/id/sys_vendor 2>/dev/null; then
@@ -758,6 +774,7 @@ main() {
     setup_nerd_fonts
     configure_asus_laptop
     setup_snapper
+    setup_grub_btrfs
     setup_flathub
     copy_dotfiles
     copy_wallpapers
