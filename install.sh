@@ -346,10 +346,18 @@ install_packages() {
         cups cups-filters
         exfatprogs ntfs-3g btrfs-progs cifs-utils dosfstools smartmontools logrotate tcpdump
         eza pamixer wlsunset cliphist adw-gtk3-theme
+        lm_sensors snapper dnf-plugin-snapper
     )
 
     dnf_install_required "${core_required[@]}"
     dnf_install_optional "${core_optional[@]}"
+
+    if command -v sensors-detect &>/dev/null; then
+        log_info "Auto-detecting hardware sensors..."
+        sudo sensors-detect --auto 2>/dev/null || true
+        log_ok "Sensors configured."
+    fi
+
     log_ok "Core packages installed."
 }
 
@@ -565,6 +573,40 @@ setup_nerd_fonts() {
     log_ok "Font cache updated."
 }
 
+setup_snapper() {
+    if ! command -v snapper &>/dev/null; then
+        log_info "Snapper not installed. Skipping."
+        return 0
+    fi
+    log_info "Configuring Snapper auto cleanup..."
+
+    local configs=()
+    [[ -d "$(findmnt -n -o SOURCE / 2>/dev/null | head -1)" ]] && configs+=("root")
+    [[ -d "$(findmnt -n -o SOURCE /home 2>/dev/null | head -1)" ]] && configs+=("home")
+
+    local cfg
+    for cfg in "${configs[@]}"; do
+        if ! snapper -c "$cfg" get-config &>/dev/null 2>&1; then
+            log_info "Creating snapper config for $cfg..."
+            sudo snapper -c "$cfg" create-config "/${cfg#root}" 2>/dev/null || { log_warn "Failed to create snapper config for $cfg"; continue; }
+        fi
+        sudo snapper -c "$cfg" set-config \
+            "TIMELINE_CLEANUP=no" \
+            "TIMELINE_LIMIT_DAILY=0" \
+            "TIMELINE_LIMIT_WEEKLY=0" \
+            "TIMELINE_LIMIT_MONTHLY=0" \
+            "TIMELINE_LIMIT_YEARLY=0" \
+            "NUMBER_CLEANUP=yes" \
+            "NUMBER_LIMIT=5" \
+            "NUMBER_LIMIT_IMPORTANT=3" 2>/dev/null || true
+        log_ok "Snapper cleanup configured for $cfg"
+    done
+
+    sudo systemctl enable --now snapper-cleanup.timer 2>/dev/null || true
+    sudo systemctl disable --now snapper-timeline.timer 2>/dev/null || true
+    log_ok "Snapper configured (number-based cleanup, timeline disabled)."
+}
+
 configure_asus_laptop() {
     log_info "Configuring ASUS laptop helpers..."
     if [[ -d /sys/devices/platform/asus-nb-wmi ]] || [[ -d /sys/devices/platform/asus-wmi ]] || grep -qi "ASUSTeK" /sys/class/dmi/id/sys_vendor 2>/dev/null; then
@@ -715,6 +757,7 @@ main() {
     install_bibata_cursor
     setup_nerd_fonts
     configure_asus_laptop
+    setup_snapper
     setup_flathub
     copy_dotfiles
     copy_wallpapers
