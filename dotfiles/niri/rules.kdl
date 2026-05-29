@@ -1,3 +1,9 @@
+// Default: rounded corners for all windows
+window-rule {
+    geometry-corner-radius 20
+    clip-to-geometry true
+}
+
 // Default window rules (WezTerm configure bug, Firefox PiP)
 window-rule {
     match app-id=r#"^org\.wezfurlong\.wezterm$"#
@@ -45,4 +51,10 @@ window-rule {
 window-rule {
     match app-id="^webapp-manager$"
     open-floating true
+}
+
+// Noctalia wallpaper behind desktop
+layer-rule {
+    match namespace="^noctalia-wallpaper*"
+    place-within-backdrop true
 }

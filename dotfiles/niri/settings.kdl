@@ -9,10 +9,18 @@ input {
         }
         numlock
     }
+
     touchpad {
         tap
         tap-button-map "left-right-middle"
         dwt
         natural-scroll
     }
+
+    focus-follows-mouse
+}
+
+debug {
+    // Allows notification actions and window activation from Noctalia.
+    honor-xdg-activation-with-invalid-serial
 }
