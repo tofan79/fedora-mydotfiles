@@ -1,0 +1,5 @@
+// Noctalia Shell (replaces waybar, fuzzel, mako, swaylock, swaybg, etc.)
+spawn-at-startup "qs" "-c" "noctalia-shell"
+
+// Clipboard history daemon for Clipper plugin
+spawn-at-startup "sh" "-c" "wl-paste --watch cliphist store &"

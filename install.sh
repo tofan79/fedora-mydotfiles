@@ -22,27 +22,6 @@ log_info "Logging to: ${LOG_FILE}"
 trap 'log_err "Failed at line ${LINENO}: ${BASH_COMMAND}"' ERR
 
 FEDORA_VER="$(rpm -E %fedora 2>/dev/null || true)"
-ARCH="$(rpm -E %_arch 2>/dev/null || uname -m)"
-FEDORA_MIRRORS=(
-    "https://mirror.nevacloud.com/fedora/fedora-linux"
-    "https://ftp.jaist.ac.jp/pub/Linux/Fedora"
-    "https://sg.mirrors.cicku.me/fedora/linux"
-)
-
-join_by_comma() {
-    local IFS=,
-    echo "$*"
-}
-
-fedora_baseurls() {
-    local suffix="$1"
-    local urls=()
-    local mirror
-    for mirror in "${FEDORA_MIRRORS[@]}"; do
-        urls+=("${mirror}/${suffix}")
-    done
-    join_by_comma "${urls[@]}"
-}
 
 detect_os() {
     if [[ -f /etc/os-release ]]; then
@@ -137,182 +116,10 @@ dnf_install_optional() {
     return 0
 }
 
-enable_dnf_parallel() {
-    log_info "Configuring DNF parallel downloads..."
-    sudo mkdir -p /etc/dnf
-    if [[ -f /etc/dnf/dnf.conf ]]; then
-        sudo cp /etc/dnf/dnf.conf "/etc/dnf/dnf.conf.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
-    fi
-
-    sudo bash -c 'cat > /etc/dnf/dnf.conf' << 'DNFEOF'
-[main]
-max_parallel_downloads=3
-defaultyes=True
-keepcache=False
-install_weak_deps=False
-DNFEOF
-    log_ok "DNF configured."
-}
-
-write_fedora_repo() {
-    local file="/etc/yum.repos.d/fedora.repo"
-    local os_base debug_base source_base
-    os_base="$(fedora_baseurls 'releases/$releasever/Everything/$basearch/os/')"
-    debug_base="$(fedora_baseurls 'releases/$releasever/Everything/$basearch/debug/tree/')"
-    source_base="$(fedora_baseurls 'releases/$releasever/Everything/source/tree/')"
-    sudo cp "$file" "${file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
-    sudo bash -c "cat > '$file'" << REPOEOF
-[fedora]
-name=Fedora \$releasever - \$basearch
-baseurl=${os_base}
-enabled=1
-countme=1
-metadata_expire=7d
-repo_gpgcheck=0
-type=rpm
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
-skip_if_unavailable=False
-
-[fedora-debuginfo]
-name=Fedora \$releasever - \$basearch - Debug
-baseurl=${debug_base}
-enabled=0
-metadata_expire=7d
-repo_gpgcheck=0
-type=rpm
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
-skip_if_unavailable=False
-
-[fedora-source]
-name=Fedora \$releasever - Source
-baseurl=${source_base}
-enabled=0
-metadata_expire=7d
-repo_gpgcheck=0
-type=rpm
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
-skip_if_unavailable=False
-REPOEOF
-}
-
-write_updates_repo() {
-    local file="/etc/yum.repos.d/fedora-updates.repo"
-    local os_base debug_base source_base
-    os_base="$(fedora_baseurls 'updates/$releasever/Everything/$basearch/')"
-    debug_base="$(fedora_baseurls 'updates/$releasever/Everything/$basearch/debug/')"
-    source_base="$(fedora_baseurls 'updates/$releasever/Everything/SRPMS/')"
-    sudo cp "$file" "${file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
-    sudo bash -c "cat > '$file'" << REPOEOF
-[updates]
-name=Fedora \$releasever - \$basearch - Updates
-baseurl=${os_base}
-enabled=1
-countme=1
-repo_gpgcheck=0
-type=rpm
-gpgcheck=1
-metadata_expire=6h
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
-skip_if_unavailable=False
-
-[updates-debuginfo]
-name=Fedora \$releasever - \$basearch - Updates - Debug
-baseurl=${debug_base}
-enabled=0
-repo_gpgcheck=0
-type=rpm
-gpgcheck=1
-metadata_expire=6h
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
-skip_if_unavailable=False
-
-[updates-source]
-name=Fedora \$releasever - Updates Source
-baseurl=${source_base}
-enabled=0
-repo_gpgcheck=0
-type=rpm
-gpgcheck=1
-metadata_expire=6h
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
-skip_if_unavailable=False
-REPOEOF
-}
-
-write_openh264_repo() {
-    local file="/etc/yum.repos.d/fedora-cisco-openh264.repo"
-    sudo cp "$file" "${file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
-    sudo bash -c "cat > '$file'" << 'REPOEOF'
-[fedora-cisco-openh264]
-name=Fedora $releasever openh264 (From Cisco) - $basearch
-baseurl=https://codecs.fedoraproject.org/openh264/$releasever/$basearch/os/
-enabled=1
-type=rpm
-repo_gpgcheck=0
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
-skip_if_unavailable=True
-REPOEOF
-}
-
-force_baseurl_repos() {
-    log_info "Switching Fedora repos from metalink/mirrorlist to baseurl..."
-    [[ -f /etc/yum.repos.d/fedora.repo ]] && write_fedora_repo
-    [[ -f /etc/yum.repos.d/fedora-updates.repo ]] && write_updates_repo
-    [[ -f /etc/yum.repos.d/fedora-cisco-openh264.repo ]] && write_openh264_repo
-    log_ok "Fedora baseurl repos configured: mirror.nevacloud.com first."
-    log_info "Baseurl mirror order: ${FEDORA_MIRRORS[*]}"
-}
-
-force_rpmfusion_baseurl() {
-    log_info "Switching RPM Fusion repos to explicit baseurl..."
-    local file
-    for file in /etc/yum.repos.d/rpmfusion-*.repo; do
-        [[ -f "$file" ]] || continue
-        sudo cp "$file" "${file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
-        sudo sed -i \
-            -e 's/^metalink=/#metalink=/' \
-            -e 's/^mirrorlist=/#mirrorlist=/' \
-            -e 's|^#baseurl=http://download1.rpmfusion.org/|baseurl=https://download1.rpmfusion.org/|' \
-            -e 's|^#baseurl=https://download1.rpmfusion.org/|baseurl=https://download1.rpmfusion.org/|' \
-            "$file" 2>/dev/null || true
-    done
-    log_ok "RPM Fusion baseurl configured when repo files are present."
-}
-
 setup_repos() {
-    enable_dnf_parallel
-    force_baseurl_repos
-    sudo dnf install -y dnf-plugins-core || log_warn "dnf-plugins-core install failed; config-manager fallback may be unavailable."
-
-    log_info "Installing RPM Fusion repos..."
-    sudo dnf install -y \
-        "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VER}.noarch.rpm" \
-        "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VER}.noarch.rpm" || \
-        log_warn "RPM Fusion release install failed."
-    force_rpmfusion_baseurl
-
-    log_info "Adding Terra repo..."
-    if ! rpm -q terra-release &>/dev/null; then
-        sudo dnf install -y --nogpgcheck --repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" terra-release || \
-            sudo dnf config-manager addrepo --from-repofile=https://terra.fyralabs.com/terra.repo || \
-            log_warn "Terra repo setup failed."
-    fi
-    if [[ -f /etc/yum.repos.d/terra.repo ]] && ! grep -q '^priority=' /etc/yum.repos.d/terra.repo 2>/dev/null; then
-        sudo sed -i '/^\[terra/ a priority=150' /etc/yum.repos.d/terra.repo 2>/dev/null || true
-    fi
-
-    log_info "Adding Brave repo..."
-    if [[ ! -f /etc/yum.repos.d/brave-browser.repo ]]; then
-        sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo || \
-            sudo dnf config-manager --add-repo https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo || \
-            log_warn "Brave repo setup failed."
-    fi
-
-    sudo dnf makecache --refresh || true
+    local script_dir
+    script_dir="$(cd "$(dirname "$0")" && pwd)"
+    bash "${script_dir}/repo.sh"
     log_ok "Repositories configured."
 }
 
@@ -345,7 +152,7 @@ install_packages() {
         qt6ct qt5ct gtk3 gtk4 libadwaita adwaita-icon-theme papirus-icon-theme
         cups cups-filters
         exfatprogs ntfs-3g btrfs-progs cifs-utils dosfstools smartmontools logrotate tcpdump
-        eza pamixer wlsunset cliphist adw-gtk3-theme
+        eza pamixer wlsunset adw-gtk3-theme
         lm_sensors snapper python3-dnf-plugin-snapper
     )
 
@@ -431,38 +238,65 @@ EOF
     log_ok "NVIDIA installed/configured. Reboot required."
 }
 
-install_mangowm() {
-    log_info "Installing MangoWM + Noctalia..."
-    if ! command -v mango &>/dev/null && ! command -v mangowm &>/dev/null && ! command -v mangowc &>/dev/null; then
-        dnf_install_required mangowm
-    fi
-    sudo dnf install -y --allowerasing noctalia-shell || \
-        log_warn "Noctalia Shell could not be installed automatically."
+install_niri() {
+    log_info "Installing Niri + Noctalia..."
 
-    local mango_cmd=""
-    if command -v mango &>/dev/null; then
-        mango_cmd="$(command -v mango)"
-    elif command -v mangowm &>/dev/null; then
-        mango_cmd="$(command -v mangowm)"
-    elif command -v mangowc &>/dev/null; then
-        mango_cmd="$(command -v mangowc)"
+    # Install Niri + xwayland-satellite (COPR already enabled by repo.sh)
+    if ! rpm -q niri &>/dev/null; then
+        sudo dnf install -y niri xwayland-satellite || \
+            log_warn "Niri install failed."
+    else
+        log_ok "Niri already installed."
     fi
 
-    if [[ -z "$mango_cmd" ]]; then
-        log_warn "MangoWM/MangoWC binary not found. SDDM will not be enabled."
+    if ! rpm -q xwayland-satellite &>/dev/null; then
+        sudo dnf install -y xwayland-satellite || \
+            log_warn "xwayland-satellite install failed."
+    fi
+
+    # Install Noctalia + cliphist (COPR already enabled by repo.sh)
+    sudo dnf install -y --allowerasing noctalia-shell cliphist || \
+        log_warn "Noctalia Shell / cliphist could not be installed automatically."
+
+    # Clean weak deps that Noctalia replaces
+    local niri_weak=(
+        alacritty fuzzel mako swaybg swayidle swaylock waybar
+        fontawesome-6-brands-fonts fontawesome-6-free-fonts
+    )
+    local pkg
+    for pkg in "${niri_weak[@]}"; do
+        if rpm -q "$pkg" &>/dev/null; then
+            sudo dnf remove -y "$pkg" 2>/dev/null || true
+        fi
+    done
+
+    # Uninstall MangoWM if present
+    if rpm -q mangowm &>/dev/null; then
+        log_info "Removing MangoWM..."
+        sudo dnf remove -y mangowm 2>/dev/null || true
+        sudo rm -f /usr/share/wayland-sessions/mangowm.desktop
+    fi
+
+    local niri_cmd=""
+    if command -v niri &>/dev/null; then
+        niri_cmd="$(command -v niri)"
+    fi
+
+    if [[ -z "$niri_cmd" ]]; then
+        log_warn "Niri binary not found. SDDM will not be enabled."
         return 0
     fi
 
     sudo mkdir -p /usr/share/wayland-sessions
-    sudo bash -c "cat > /usr/share/wayland-sessions/mangowm.desktop" << DESKTOPEOF
+    sudo bash -c "cat > /usr/share/wayland-sessions/niri.desktop" << DESKTOPEOF
 [Desktop Entry]
-Name=MangoWM
-Comment=Mango Wayland Compositor
-Exec=${mango_cmd}
+Name=Niri
+Comment=Niri Scrollable Wayland Compositor
+Exec=${niri_cmd} --session
 Type=Application
-DesktopNames=MangoWM
+DesktopNames=Niri
 DESKTOPEOF
-    log_ok "MangoWM session file created."
+    log_ok "Niri session file created."
     install_sddm
 }
 
@@ -471,7 +305,7 @@ install_sddm() {
     dnf_install_required sddm qt6-qtdeclarative xorg-x11-server-Xorg
     sudo mkdir -p /etc/sddm.conf.d
     local current_user="${USER:-$(whoami)}"
-    sudo bash -c 'cat > /etc/sddm.conf.d/10-mango.conf' << SDDMEOF
+    sudo bash -c 'cat > /etc/sddm.conf.d/10-niri.conf' << SDDMEOF
 [General]
 InputMethod=none
 Numlock=on
@@ -658,8 +492,7 @@ configure_asus_laptop() {
         return 0
     fi
     if ! command -v asusctl &>/dev/null && ! rpm -q asusctl &>/dev/null; then
-        log_info "Trying ASUS Linux COPR..."
-        sudo dnf copr enable -y lukenukem/asus-linux 2>/dev/null || true
+        log_info "Installing ASUS Linux helper..."
     fi
     if [[ -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo ]] && \
        ! grep -q '^priority=' /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo 2>/dev/null; then
@@ -673,7 +506,7 @@ configure_asus_laptop() {
 copy_dotfiles() {
     log_info "Copying dotfiles to ~/.config/..."
     mkdir -p ~/.config
-    local dirs=(btop clean fish gtk-3.0 gtk-4.0 kitty mango noctalia nvim qt5ct qt6ct xdg-desktop-portal yazi zed zen)
+    local dirs=(btop clean environment.d fish gtk-3.0 gtk-4.0 kitty niri noctalia nvim qt5ct qt6ct xdg-desktop-portal yazi zed zen)
     local backup_dir=""
     local dir
     for dir in "${dirs[@]}"; do
@@ -721,8 +554,7 @@ patch_copied_dotfiles() {
     for file in "$HOME/.config/noctalia/settings.json" "$HOME/.config/kitty/sessions/config.session"; do
         [[ -f "$file" ]] && sed -i "s|/home/mindset|$HOME|g; s|arch-config|fedora-mydotfiles|g; s|opensuse-mydotfiles|fedora-mydotfiles|g" "$file" 2>/dev/null || true
     done
-    find "$HOME/.config/mango/bin" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
-    chmod +x "$HOME/.config/mango/autostart.sh" "$HOME/.config/clean/clean.sh" 2>/dev/null || true
+    chmod +x "$HOME/.config/clean/clean.sh" 2>/dev/null || true
     log_ok "Dotfiles patched."
 }
 
@@ -794,7 +626,7 @@ main() {
         *) configure_firewalld ;;
     esac
 
-    install_mangowm
+    install_niri
     install_tela_icon_theme
     install_bibata_cursor
     setup_nerd_fonts
@@ -818,7 +650,7 @@ main() {
     echo ""
     log_ok "Fedora core setup complete."
     log_info "Log saved to: ${LOG_FILE}"
-    log_info "After reboot: select MangoWM in SDDM."
+    log_info "After reboot: select Niri in SDDM."
     log_info "NVIDIA hybrid check: nvidia-smi; run dGPU apps with: prime-run <app>"
     log_info "Reboot: sudo reboot"
 }

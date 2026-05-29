@@ -1,0 +1,48 @@
+// Default window rules (WezTerm configure bug, Firefox PiP)
+window-rule {
+    match app-id=r#"^org\.wezfurlong\.wezterm$"#
+    default-column-width {}
+}
+
+window-rule {
+    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+    open-floating true
+}
+
+// Noctalia floating apps
+window-rule {
+    match app-id="^steam$"
+    open-floating true
+}
+window-rule {
+    match app-id="^localsend$|^org.localsend.localsend$"
+    open-floating true
+}
+window-rule {
+    match app-id="^org.gnome.Calculator$|^kcalc$"
+    open-floating true
+}
+window-rule {
+    match app-id="^org.pulseaudio.pavucontrol$|^pavucontrol$"
+    open-floating true
+}
+window-rule {
+    match app-id="^org.flameshot.Flameshot$"
+    open-floating true
+}
+window-rule {
+    match app-id="^mpv$"
+    open-floating true
+}
+window-rule {
+    match app-id="^imv$"
+    open-floating true
+}
+window-rule {
+    match app-id="^com.shellyorg.shelly$"
+    open-floating true
+}
+window-rule {
+    match app-id="^webapp-manager$"
+    open-floating true
+}

@@ -87,11 +87,12 @@ Repo Fedora dan Updates dipaksa memakai `baseurl` (bukan `metalink`). Mirror mak
 dotfiles/
 ├── btop/               # System monitor config
 ├── clean/              # Fedora cleanup script
+├── environment.d/      # Systemd user environment (CSD, theming)
 ├── fish/               # Fish shell config + aliases
 ├── gtk-3.0/            # GTK3 theme
 ├── gtk-4.0/            # GTK4 theme
 ├── kitty/              # Kitty terminal + themes + sessions
-├── mango/              # MangoWM config + autostart scripts
+├── niri/               # Niri compositor config
 ├── noctalia/           # Noctalia shell config + plugins
 ├── nvim/               # Neovim config
 ├── qt5ct/              # Qt5 theme config
@@ -137,7 +138,7 @@ Saat `install.sh` jalan:
 - Qt/GTK theme: `qt6ct`, `qt5ct`, `gtk3`, `gtk4`, `libadwaita`, `adwaita-icon-theme`, `papirus-icon-theme`, `adw-gtk3-theme`
 - Printing: `cups`, `cups-filters`
 - Filesystem: `exfatprogs`, `ntfs-3g`, `btrfs-progs`, `cifs-utils`, `dosfstools`, `smartmontools`, `logrotate`, `tcpdump`
-- Desktop helpers: `eza`, `pamixer`, `wlsunset`, `cliphist`
+- Desktop helpers: `eza`, `pamixer`, `wlsunset`
 
 ### Multimedia Codecs
 
@@ -196,25 +197,21 @@ prime-run gamemoderun %command%
 
 Secure Boot note: if Secure Boot is enabled, NVIDIA kernel modules may not load until MOK enrollment is handled. The script warns before continuing.
 
-### MangoWM + Noctalia
+### Niri + Noctalia
 
-Packages attempted:
+Packages:
 
-- `mangowm`
-- `noctalia-shell`
-- `noctalia-qs` dependency is pulled by `noctalia-shell`
+- `niri` (from yalter/niri Copr)
+- `xwayland-satellite`
+- `noctalia-shell` + `cliphist` (from lionheartp/Hyprland Copr)
 
-Session binary detection order:
-
-1. `mango`
-2. `mangowm`
-3. `mangowc`
-
-If a binary is found, the script creates:
+Session file:
 
 ```text
-/usr/share/wayland-sessions/mangowm.desktop
+/usr/share/wayland-sessions/niri.desktop
 ```
+
+Weak deps removed after install (replaced by Noctalia): alacritty, fuzzel, mako, swaybg, swayidle, swaylock, waybar.
 
 ### SDDM
 
@@ -227,7 +224,7 @@ Packages:
 Config written to:
 
 ```text
-/etc/sddm.conf.d/10-mango.conf
+/etc/sddm.conf.d/10-niri.conf
 ```
 
 Behavior:
