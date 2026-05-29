@@ -1,19 +1,22 @@
 # Fedora My Dotfiles - Daily Driver
 
-Setup Fedora 44 untuk ASUS TUF Gaming A15 FA506ICB dengan MangoWM + Noctalia.
+Setup Fedora 44 untuk ASUS TUF Gaming A15 FA506ICB dengan Niri + Noctalia.
 
 Target sistem:
 - AMD Renoir iGPU sebagai GPU default
 - NVIDIA RTX 3050 Mobile sebagai dGPU on-demand lewat `prime-run`
 - MediaTek MT7921 Wi-Fi / Realtek RTL8111/8168 LAN
-- SDDM + MangoWM
+- SDDM + Niri
 
 ## Cara Pakai
 
 ```bash
-chmod +x install.sh apps.sh gaming.sh
+chmod +x repo.sh install.sh apps.sh gaming.sh
 
-# 1. Core OS: repos, driver, codec, MangoWM, SDDM, dotfiles, shell
+# 0. Repo & DNF config (standalone, bisa dijalankan sendiri)
+./repo.sh
+
+# 1. Core OS: driver, codec, Niri, SDDM, dotfiles, shell
 ./install.sh
 sudo reboot
 
@@ -23,6 +26,8 @@ sudo reboot
 # 3. Aplikasi harian (bisa kapan saja)
 ./apps.sh
 ```
+
+`repo.sh` mengatur DNF config dan semua repository (Fedora baseurl mirror, RPM Fusion, Brave, Terra, COPRs) — diekstrak dari `install.sh` supaya bisa dijalankan independen.
 
 `install.sh` adalah core OS — package critical exit kalau gagal. Aplikasi besar dan gaming stack dipisah supaya base system tetap minimal tapi siap daily.
 
@@ -34,7 +39,8 @@ Ketentuan install package:
 
 | Script | Fungsi | Jalankan |
 |--------|--------|----------|
-| `install.sh` | DNF config, mirror baseurl, RPM Fusion, Terra, Brave repo, core packages (required+optional), multimedia codecs, NVIDIA, MangoWM+Noctalia, SDDM, Tela icons, Bibata cursor, ASUS COPR, Flathub, dotfiles, fish shell, mise, services | Setelah fresh install Fedora, **reboot wajib** |
+| `repo.sh` | DNF config, mirror baseurl, RPM Fusion, Terra, Brave repo, COPRs | Sebelum install.sh (bisa standalone) |
+| `install.sh` | Core packages (required+optional), multimedia codecs, NVIDIA, Niri+Noctalia, SDDM, Tela icons, Bibata cursor, ASUS COPR, Flathub, dotfiles, fish shell, mise, services | Setelah fresh install Fedora, **reboot wajib** |
 | `apps.sh` | Nautilus+GVFS, browser, Neovim, Yazi, GNOME tools, LocalSend/Zen (COPR), ASUS tools (COPR), dev CLI, desktop entry fix untuk Kitty | Setelah reboot (kapan saja) |
 | `gaming.sh` | GameMode, Gamescope, MangoHud, vkBasalt, Wine, Winetricks, Steam, Vulkan/i686 32-bit, MangoHud config | **Setelah reboot** (NVIDIA akmod harus terload dulu) |
 
@@ -44,7 +50,7 @@ DNF dikonfigurasi:
 
 ```ini
 [main]
-max_parallel_downloads=3
+max_parallel_downloads=5
 defaultyes=True
 keepcache=False
 install_weak_deps=False
@@ -60,25 +66,27 @@ Repo Fedora dan Updates dipaksa memakai `baseurl` (bukan `metalink`). Mirror mak
 
 | Priority | Repo |
 |----------|------|
-| **99** (default) | `fedora`, `updates`, `fedora-cisco-openh264`, `rpmfusion-free`, `rpmfusion-nonfree`, `rpmfusion-nvidia`, `rpmfusion-steam`, `brave-browser` |
-| **110** | `copr:asus-linux`, `copr:mindset-apps` |
+| **99** (default) | `fedora`, `updates`, `fedora-cisco-openh264`, `rpmfusion-free`, `rpmfusion-nonfree`, `rpmfusion-nvidia`, `rpmfusion-steam`, `brave-browser`, `copr:yalter/niri`, `copr:lionheartp/Hyprland`, `copr:mindset-apps` |
+| **110** | `copr:asus-linux` (hanya pada hardware ASUS) |
 | **150** | `terra` |
 
 ### Daftar Repo Lengkap
 
 | # | Repo | Sumber |
 |---|------|--------|
-| 1 | `fedora` | install.sh (baseurl mirror) |
-| 2 | `updates` | install.sh (baseurl mirror) |
-| 3 | `fedora-cisco-openh264` | install.sh |
-| 4 | `rpmfusion-free` | install.sh |
-| 5 | `rpmfusion-nonfree` | install.sh |
-| 6 | `rpmfusion-nonfree-nvidia-driver` | install.sh (RPM Fusion nonfree) |
-| 7 | `rpmfusion-nonfree-steam` | install.sh (RPM Fusion nonfree) |
-| 8 | `terra` | install.sh + apps.sh (priority 150) |
-| 9 | `brave-browser` | install.sh + apps.sh |
-| 10 | `copr:asus-linux` | install.sh + apps.sh (priority 110) |
-| 11 | `copr:mindset-apps` | apps.sh (priority 110) |
+| 1 | `fedora` | repo.sh (baseurl mirror) |
+| 2 | `updates` | repo.sh (baseurl mirror) |
+| 3 | `fedora-cisco-openh264` | repo.sh |
+| 4 | `rpmfusion-free` | repo.sh |
+| 5 | `rpmfusion-nonfree` | repo.sh |
+| 6 | `rpmfusion-nonfree-nvidia-driver` | repo.sh (RPM Fusion nonfree) |
+| 7 | `rpmfusion-nonfree-steam` | repo.sh (RPM Fusion nonfree) |
+| 8 | `terra` | repo.sh (priority 150) |
+| 9 | `brave-browser` | repo.sh |
+| 10 | `copr:yalter/niri` | repo.sh |
+| 11 | `copr:lionheartp/Hyprland` | repo.sh (noctalia-shell + cliphist) |
+| 12 | `copr:mindset-apps` | repo.sh |
+| 13 | `copr:asus-linux` | repo.sh (priority 110, hanya ASUS) |
 | — | `flathub` (flatpak) | install.sh |
 
 ## Dotfiles
@@ -87,7 +95,7 @@ Repo Fedora dan Updates dipaksa memakai `baseurl` (bukan `metalink`). Mirror mak
 dotfiles/
 ├── btop/               # System monitor config
 ├── clean/              # Fedora cleanup script
-├── environment.d/      # Systemd user environment (CSD, theming)
+├── environment.d/      # Systemd user environment (CSD, Wayland vars)
 ├── fish/               # Fish shell config + aliases
 ├── gtk-3.0/            # GTK3 theme
 ├── gtk-4.0/            # GTK4 theme
@@ -201,9 +209,9 @@ Secure Boot note: if Secure Boot is enabled, NVIDIA kernel modules may not load 
 
 Packages:
 
-- `niri` (from yalter/niri Copr)
+- `niri` (from yalter/niri Copr, di-enable oleh repo.sh)
 - `xwayland-satellite`
-- `noctalia-shell` + `cliphist` (from lionheartp/Hyprland Copr)
+- `noctalia-shell` + `cliphist` (from lionheartp/Hyprland Copr, di-enable oleh repo.sh)
 
 Session file:
 
