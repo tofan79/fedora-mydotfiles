@@ -8,6 +8,8 @@ sudo dnf remove -y \
     budgie-backgrounds budgie-desktop-defaults desktop-backgrounds-budgie \
     f44-backgrounds-budgie
 
-rm -rf "$HOME/.config/budgie-desktop"
-rm -f "$HOME/.config/gammastep/budgie_config.ini"
-rm -f "$HOME/.local/share/contractor/org.buddiesofbudgie.sendto.contract"
+rm -rf "$HOME/.config/budgie-desktop" 2>/dev/null || true
+rm -f "$HOME/.config/gammastep/budgie_config.ini" 2>/dev/null || true
+rm -f "$HOME/.local/share/contractor/org.buddiesofbudgie.sendto.contract" 2>/dev/null || true
+
+sudo rmdir /usr/share/budgie-* 2>/dev/null || true
