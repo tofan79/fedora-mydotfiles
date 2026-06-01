@@ -53,12 +53,11 @@ sudo reboot
 - **Terra:** priority 150
 - **Brave Browser**
 - **NVIDIA CUDA:** `cuda-fedora44.repo` (priority 90)
-- **COPRs:**
-  - `mindset/Mindset-Apps` (priority 1 — mangowm, localsend, zen-browser, zed)
-  - `lionheartp/Hyprland` (priority 100)
-  - `avengemedia/dms`, `avengemedia/danklinux`
-  - `rafatosta/zapzap`
+- **COPRs:** semua priority default 99, kecuali:
   - `lukenukem/asus-linux` (priority 110, hanya ASUS)
+  - `lionheartp/Hyprland` (priority 110)
+  - `mindset/Mindset-Apps`, `avengemedia/dms`, `avengemedia/danklinux`
+  - `rafatosta/zapzap`
   - `linuxgamerlife/lgl-scxctl-manager`
   - `linuxgamerlife/lgl-system-loadout`
 
