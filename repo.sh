@@ -195,6 +195,7 @@ if ! command -v dnf &>/dev/null || ! dnf-command copr &>/dev/null; then
 fi
 
 sudo dnf copr enable -y lionheartp/Hyprland 2>/dev/null || warn "Failed to enable lionheartp/Hyprland copr"
+set_copr_priority "lionheartp:Hyprland" 110
 sudo dnf copr enable -y mindset/Mindset-Apps 2>/dev/null || warn "Failed to enable mindset/Mindset-Apps copr"
 sudo dnf copr enable -y avengemedia/dms 2>/dev/null || warn "Failed to enable avengemedia/dms copr"
 sudo dnf copr enable -y avengemedia/danklinux 2>/dev/null || warn "Failed to enable avengemedia/danklinux copr"
