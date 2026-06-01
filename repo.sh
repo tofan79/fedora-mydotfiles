@@ -7,9 +7,12 @@ set -euo pipefail
 
 FEDORA_VER="$(rpm -E %fedora 2>/dev/null || true)"
 FEDORA_MIRRORS=(
-    "https://mirror.nevacloud.com/fedora/fedora-linux"
-    "https://ftp.jaist.ac.jp/pub/Linux/Fedora"
-    "https://sg.mirrors.cicku.me/fedora/linux"
+    # Priority 1: Alibaba Cloud China — fastest (17ms, 70 Mbps)
+    "https://mirrors.aliyun.com/fedora"
+    # Priority 2: RIKEN Japan (89ms, 28 Mbps)
+    "https://ftp.riken.jp/Linux/fedora"
+    # Last fallback: Fedora default mirror redirector
+    "https://download.fedoraproject.org/pub/fedora/linux"
 )
 
 join_by_comma() { local IFS=,; echo "$*"; }
@@ -101,7 +104,6 @@ countme=1
 repo_gpgcheck=0
 type=rpm
 gpgcheck=1
-metadata_expire=6h
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
 skip_if_unavailable=False
 
@@ -112,7 +114,6 @@ enabled=0
 repo_gpgcheck=0
 type=rpm
 gpgcheck=1
-metadata_expire=6h
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
 skip_if_unavailable=False
 
@@ -123,24 +124,18 @@ enabled=0
 repo_gpgcheck=0
 type=rpm
 gpgcheck=1
-metadata_expire=6h
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
 skip_if_unavailable=False
 REPOEOF
 
 openh264_repo_file="/etc/yum.repos.d/fedora-cisco-openh264.repo"
-sudo cp "$openh264_repo_file" "${openh264_repo_file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
-sudo tee "$openh264_repo_file" > /dev/null << 'REPOEOF'
-[fedora-cisco-openh264]
-name=Fedora $releasever openh264 (From Cisco) - $basearch
-baseurl=https://codecs.fedoraproject.org/openh264/$releasever/$basearch/os/
-enabled=1
-type=rpm
-repo_gpgcheck=0
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-$releasever-$basearch
-skip_if_unavailable=True
-REPOEOF
+if [[ -f "$openh264_repo_file" ]]; then
+    sudo cp "$openh264_repo_file" "${openh264_repo_file}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+    sudo rm -f "$openh264_repo_file"
+    ok "Fedora Cisco OpenH264 repo removed to avoid 404 metadata errors."
+else
+    ok "Fedora Cisco OpenH264 repo is not present."
+fi
 
 ok "Fedora baseurl repos configured."
 
@@ -172,12 +167,22 @@ if [[ ! -f /etc/yum.repos.d/brave-browser.repo ]]; then
         warn "Brave repo setup failed."
 fi
 
+# ── NVIDIA CUDA (official driver) ─────────────────────────────
+info "Adding NVIDIA CUDA repo..."
+NVIDIA_REPO_FILE="/etc/yum.repos.d/cuda-fedora${FEDORA_VER}.repo"
+if [[ ! -f "$NVIDIA_REPO_FILE" ]]; then
+    sudo dnf config-manager addrepo --from-repofile="https://developer.download.nvidia.com/compute/cuda/repos/fedora${FEDORA_VER}/x86_64/cuda-fedora${FEDORA_VER}.repo" || \
+        warn "NVIDIA CUDA repo setup failed."
+fi
+# Remove existing priority lines then set it
+sudo sed -i "/^priority=/d" "$NVIDIA_REPO_FILE" 2>/dev/null || true
+sudo sed -i "/^\[cuda-fedora${FEDORA_VER}-x86_64\]/a priority=90" "$NVIDIA_REPO_FILE" 2>/dev/null || true
+
 # ── Terra (lowest priority) ───────────────────────────────────
 info "Adding Terra repo... (lowest priority)"
 if ! rpm -q terra-release &>/dev/null; then
     sudo dnf install -y --nogpgcheck --repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" terra-release || \
-        sudo dnf config-manager addrepo --from-repofile=https://terra.fyralabs.com/terra.repo || \
-        warn "Terra repo setup failed."
+        warn "Terra repo setup failed (repos.fyralabs.com may be offline)."
 fi
 if [[ -f /etc/yum.repos.d/terra.repo ]] && ! grep -q '^priority=' /etc/yum.repos.d/terra.repo 2>/dev/null; then
     sudo sed -i '/^\[terra/ a priority=150' /etc/yum.repos.d/terra.repo 2>/dev/null || true
@@ -189,17 +194,30 @@ if ! command -v dnf &>/dev/null || ! dnf-command copr &>/dev/null; then
     sudo dnf install -y dnf-plugins-core
 fi
 
-sudo dnf copr enable -y yalter/niri 2>/dev/null || warn "Failed to enable yalter/niri copr"
 sudo dnf copr enable -y lionheartp/Hyprland 2>/dev/null || warn "Failed to enable lionheartp/Hyprland copr"
 sudo dnf copr enable -y mindset/Mindset-Apps 2>/dev/null || warn "Failed to enable mindset/Mindset-Apps copr"
+sudo dnf copr enable -y avengemedia/dms 2>/dev/null || warn "Failed to enable avengemedia/dms copr"
+sudo dnf copr enable -y avengemedia/danklinux 2>/dev/null || warn "Failed to enable avengemedia/danklinux copr"
+sudo dnf copr enable -y rafatosta/zapzap 2>/dev/null || warn "Failed to enable rafatosta/zapzap copr"
+sudo dnf copr enable -y linuxgamerlife/lgl-scxctl-manager 2>/dev/null || warn "Failed to enable linuxgamerlife/lgl-scxctl-manager copr"
+sudo dnf copr enable -y linuxgamerlife/lgl-system-loadout 2>/dev/null || warn "Failed to enable linuxgamerlife/lgl-system-loadout copr"
+
+# ── Priority: Mindset-Apps #1 (highest), rest lowered ──────────
+set_copr_priority() {
+    local repo_file="/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:$1.repo"
+    local priority="$2"
+    if [[ -f "$repo_file" ]]; then
+        sudo sed -i "/^priority=/d" "$repo_file" 2>/dev/null || true
+        sudo sed -i "/^\[copr:copr.fedorainfracloud.org:$1\]/a priority=$priority" "$repo_file" 2>/dev/null || true
+    fi
+}
+
+set_copr_priority "mindset:Mindset-Apps" 1
+set_copr_priority "lionheartp:Hyprland" 100
 
 if grep -qi "asus\|rog" /sys/devices/virtual/dmi/id/product_name 2>/dev/null; then
     sudo dnf copr enable -y lukenukem/asus-linux 2>/dev/null || true
-    if [[ -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo ]] && \
-       ! grep -q '^priority=' /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo 2>/dev/null; then
-        sudo sed -i '/^\[copr:copr.fedorainfracloud.org:lukenukem:asus-linux/ a priority=110' \
-            /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo 2>/dev/null || true
-    fi
+    set_copr_priority "lukenukem:asus-linux" 110
 fi
 
 # ── Refresh ───────────────────────────────────────────────────

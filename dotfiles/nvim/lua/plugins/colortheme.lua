@@ -1,7 +1,4 @@
--- ================================================================================================
--- TITLE : colorscheme
--- ABOUT : Theme plugins - Noctalia/Matugen integration with base16-nvim
--- ================================================================================================
+-- Theme plugins — pilih salah satu lewat `:colorscheme <nama>`
 
 return {
   { "catppuccin/nvim", name = "catppuccin", lazy = false, priority = 1000 },
@@ -20,22 +17,15 @@ return {
   { "Mofiqul/dracula.nvim", name = "dracula", lazy = false, priority = 1000 },
   { "rose-pine/neovim", name = "rose-pine", lazy = false, priority = 1000 },
   { "kdheepak/monochrome.nvim", lazy = false, priority = 1000 },
-  -- Noctalia/Matugen integration
+
+  -- Default colorscheme
   {
-    "RRethy/base16-nvim",
+    "folke/tokyonight.nvim",
     lazy = false,
     priority = 1000,
     config = function()
-      -- Load the matugen-generated theme
-      local ok, matugen = pcall(require, "matugen")
-      if ok then
-        matugen.setup()
-      else
-        -- Fallback to a default theme if matugen hasn't generated yet
-        vim.cmd.colorscheme("tokyonight-night")
-      end
+      vim.cmd.colorscheme("tokyonight-night")
 
-      -- Apply transparency after colorscheme loads
       vim.schedule(function()
         vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
         vim.api.nvim_set_hl(0, "NormalNC", { bg = "none" })

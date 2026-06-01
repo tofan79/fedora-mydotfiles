@@ -44,26 +44,7 @@ preflight_checks() {
     sudo -n true 2>/dev/null || sudo -v
 }
 
-ensure_rpmfusion() {
-    local fedora_ver
-    fedora_ver="$(rpm -E %fedora)"
-    if ! rpm -q rpmfusion-free-release rpmfusion-nonfree-release &>/dev/null; then
-        sudo dnf install -y \
-            "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-${fedora_ver}.noarch.rpm" \
-            "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${fedora_ver}.noarch.rpm" || true
-    fi
-    local file
-    for file in /etc/yum.repos.d/rpmfusion-*.repo; do
-        [[ -f "$file" ]] || continue
-        sudo sed -i \
-            -e 's/^metalink=/#metalink=/' \
-            -e 's/^mirrorlist=/#mirrorlist=/' \
-            -e 's|^#baseurl=http://download1.rpmfusion.org/|baseurl=https://download1.rpmfusion.org/|' \
-            -e 's|^#baseurl=https://download1.rpmfusion.org/|baseurl=https://download1.rpmfusion.org/|' \
-            "$file" 2>/dev/null || true
-    done
-    sudo dnf makecache --refresh 2>/dev/null || true
-}
+
 
 install_gaming_packages() {
     log_info "Installing gaming runtime packages..."
@@ -71,7 +52,8 @@ install_gaming_packages() {
         gamemode gamescope mangohud mangohud.i686 vkBasalt goverlay \
         wine winetricks protontricks \
         sdl2-compat cabextract 7zip unrar steam \
-        mesa-dri-drivers.i686 mesa-vulkan-drivers.i686 vulkan-loader.i686
+        mesa-dri-drivers.i686 mesa-vulkan-drivers.i686 vulkan-loader.i686 \
+        scx-tools scx-scheds lgl-scxctl-manager
     log_ok "Gaming packages installed."
 }
 
@@ -106,7 +88,6 @@ configure_gamemode() {
 
 main() {
     preflight_checks
-    ensure_rpmfusion
     install_gaming_packages
     install_mangohud_config
     configure_gamemode

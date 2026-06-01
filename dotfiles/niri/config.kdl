@@ -1,8 +1,0 @@
-// Niri Config — Default Niri + Noctalia overrides
-
-include "./monitor.kdl"
-include "./settings.kdl"
-include "./layout.kdl"
-include "./rules.kdl"
-include "./autostart.kdl"
-include "./keybinds.kdl"

@@ -44,40 +44,17 @@ preflight_checks() {
     sudo -n true 2>/dev/null || sudo -v
 }
 
-ensure_repos() {
-    sudo dnf install -y dnf-plugins-core 2>/dev/null || true
-    if [[ ! -f /etc/yum.repos.d/brave-browser.repo ]]; then
-        sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo 2>/dev/null || true
-    fi
-    sudo dnf copr enable -y mindset/Mindset-Apps 2>/dev/null || true
-    if [[ -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:mindset:Mindset-Apps.repo ]] && \
-       ! grep -q '^priority=' /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:mindset:Mindset-Apps.repo 2>/dev/null; then
-        sudo sed -i '/^\[copr:copr.fedorainfracloud.org:mindset:Mindset-Apps/ a priority=110' \
-            /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:mindset:Mindset-Apps.repo 2>/dev/null || true
-    fi
-    if ! rpm -q terra-release &>/dev/null; then
-        sudo dnf install -y --nogpgcheck --repofrompath "terra,https://repos.fyralabs.com/terra\$releasever" terra-release 2>/dev/null || true
-    fi
-    if ! command -v asusctl &>/dev/null && ! rpm -q asusctl &>/dev/null; then
-        sudo dnf copr enable -y lukenukem/asus-linux 2>/dev/null || true
-    fi
-    if [[ -f /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo ]] && \
-       ! grep -q '^priority=' /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo 2>/dev/null; then
-        sudo sed -i '/^\[copr:copr.fedorainfracloud.org:lukenukem:asus-linux/ a priority=110' \
-            /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:lukenukem:asus-linux.repo 2>/dev/null || true
-    fi
-    sudo dnf makecache --refresh 2>/dev/null || true
-}
+
 
 install_core_app_support() {
     log_info "Installing desktop app support..."
     dnf_install \
         nautilus nautilus-python gvfs gvfs-fuse gvfs-smb gvfs-gphoto2 gvfs-afc libmtp \
-        yazi neovim btop mpv imv gnome-disk-utility gnome-calculator file-roller seahorse gnome-keyring pavucontrol-qt \
+        yazi neovim btop mpv imv gnome-disk-utility gnome-calculator file-roller seahorse gnome-keyring \
         tesseract tesseract-langpack-eng ImageMagick \
-        xdg-desktop-portal-gtk xdg-utils xdg-user-dirs python3-gobject loupe wtype \
+        xdg-desktop-portal-gtk xdg-utils xdg-user-dirs python3-gobject loupe wtype wdisplays \
         ncdu httpie bind-utils whois traceroute mtr socat nmap gh strace \
-        brave-browser telegram-desktop asusctl asusctl-rog-gui
+        brave-browser telegram-desktop zapzap asusctl asusctl-rog-gui lgl-system-loadout
 
     log_info "Installing LocalSend and Zen Browser from Mindset-Apps COPR when available..."
     dnf_install localsend zen-browser zed
@@ -107,7 +84,6 @@ fix_terminal_desktop() {
 
 main() {
     preflight_checks
-    ensure_repos
     install_core_app_support
     fix_terminal_desktop
     log_ok "Fedora app support complete. Log: ${LOG_FILE}"
