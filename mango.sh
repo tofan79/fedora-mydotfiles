@@ -52,7 +52,8 @@ install_mango_dms() {
     dnf_install dms \
         quickshell-git accountsservice dgop \
         rsms-inter-fonts material-symbols-fonts \
-        cava danksearch matugen qt6ct qt6-qtmultimedia cliphist
+        cava danksearch matugen qt6ct qt6-qtmultimedia cliphist \
+        cups-pk-helper power-profiles-daemon
 
     if command -v mangowm &>/dev/null; then
         sudo mkdir -p /usr/share/wayland-sessions
@@ -67,9 +68,9 @@ DESKTOPEOF
         log_ok "Mango session file created."
     fi
 
-    if systemctl --user list-unit-files dms.service &>/dev/null 2>&1; then
-        systemctl --user enable --now dms 2>/dev/null || true
-        log_ok "DMS service enabled."
+    if systemctl --user is-enabled dms.service &>/dev/null 2>&1; then
+        systemctl --user disable dms.service 2>/dev/null || true
+        log_ok "DMS systemd service disabled (using exec-once)."
     fi
 
     log_ok "MangoWM + DMS installed."
