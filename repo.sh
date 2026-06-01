@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ═══════════════════════════════════════════════════════════════
-# repo.sh — DNF config + repository setup for Fedora + Niri
+# repo.sh — DNF config + repository setup for Fedora
 # ═══════════════════════════════════════════════════════════════
 
 FEDORA_VER="$(rpm -E %fedora 2>/dev/null || true)"
@@ -202,7 +202,7 @@ sudo dnf copr enable -y rafatosta/zapzap 2>/dev/null || warn "Failed to enable r
 sudo dnf copr enable -y linuxgamerlife/lgl-scxctl-manager 2>/dev/null || warn "Failed to enable linuxgamerlife/lgl-scxctl-manager copr"
 sudo dnf copr enable -y linuxgamerlife/lgl-system-loadout 2>/dev/null || warn "Failed to enable linuxgamerlife/lgl-system-loadout copr"
 
-# ── Priority: Mindset-Apps #1 (highest), rest lowered ──────────
+# ── ASUS (priority 110, lowest) ────────────────────────────────
 set_copr_priority() {
     local repo_file="/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:$1.repo"
     local priority="$2"
@@ -211,9 +211,6 @@ set_copr_priority() {
         sudo sed -i "/^\[copr:copr.fedorainfracloud.org:$1\]/a priority=$priority" "$repo_file" 2>/dev/null || true
     fi
 }
-
-set_copr_priority "mindset:Mindset-Apps" 1
-set_copr_priority "lionheartp:Hyprland" 100
 
 if grep -qi "asus\|rog" /sys/devices/virtual/dmi/id/product_name 2>/dev/null; then
     sudo dnf copr enable -y lukenukem/asus-linux 2>/dev/null || true
