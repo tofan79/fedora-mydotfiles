@@ -64,6 +64,9 @@ sudo reboot
 ### Core Packages
 **Required:** git, curl, rsync, libva-utils, sddm, kitty, flatpak, cmake, meson, python3, podman, openssh, ShellCheck
 
+### Flatpak
+- Auto add Flathub remote: `flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo`
+
 **Optional CLI:** bat, fzf, zoxide, fastfetch, jq, tmux, ripgrep, fd-find, eza, ncdu, httpie, bind-utils, whois, traceroute, mtr, socat, nmap, gh, strace
 
 **Wayland:** grim, slurp, wl-clipboard, brightnessctl, wdisplays
