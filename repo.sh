@@ -205,7 +205,7 @@ set_copr_priority() {
 }
 
 sudo dnf copr enable -y lionheartp/Hyprland 2>/dev/null || warn "Failed to enable lionheartp/Hyprland copr"
-set_copr_priority "lionheartp:Hyprland" 100
+set_copr_priority "lionheartp:Hyprland" 110
 sudo dnf copr enable -y mindset/Mindset-Apps 2>/dev/null || warn "Failed to enable mindset/Mindset-Apps copr"
 set_copr_priority "mindset:Mindset-Apps" 100
 sudo dnf copr enable -y avengemedia/dms 2>/dev/null || warn "Failed to enable avengemedia/dms copr"

@@ -54,7 +54,8 @@ sudo reboot
 - **Brave Browser:** default
 - **NVIDIA CUDA:** `cuda-fedora44.repo` (priority 90 — tertinggi)
 - **COPRs:** semua priority 100, kecuali:
-  - `lukenukem/asus-linux` (priority 110, hanya ASUS)
+  - `lukenukem/asus-linux` (priority 110)
+  - `lionheartp/Hyprland` (priority 110 — backup)
   - `bieszczaders/kernel-cachyos`
   - `bieszczaders/kernel-cachyos-addons`
 
