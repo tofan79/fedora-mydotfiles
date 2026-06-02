@@ -158,6 +158,10 @@ install_icon_themes() {
     gsettings set org.gnome.desktop.interface icon-theme "WhiteSur"
     log_ok "WhiteSur set as default."
 
+    log_info "Setting Bibata-Modern-Ice as default cursor..."
+    gsettings set org.gnome.desktop.interface cursor-theme "Bibata-Modern-Ice"
+    log_ok "Bibata cursor set as default."
+
     log_info "Installing Tela icon theme..."
     if ls ~/.local/share/icons/Tela* &>/dev/null 2>&1; then
         log_ok "Tela already installed."
@@ -185,9 +189,6 @@ install_bibata_cursor() {
     else
         log_warn "Bibata cursor unavailable."
     fi
-    log_info "Setting Bibata-Modern-Ice as default cursor..."
-    gsettings set org.gnome.desktop.interface cursor-theme "Bibata-Modern-Ice"
-    log_ok "Bibata cursor set as default."
 }
 
 setup_nerd_fonts() {
