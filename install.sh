@@ -104,6 +104,16 @@ install_packages() {
     log_ok "Packages installed."
 }
 
+setup_flatpak() {
+    command -v flatpak &>/dev/null || { log_warn "Flatpak not installed."; return 0; }
+    log_info "Adding Flathub remote..."
+    if sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+        log_ok "Flathub remote ready."
+    else
+        log_warn "Failed to add Flathub remote."
+    fi
+}
+
 install_multimedia() {
     log_info "Installing multimedia codecs..."
     sudo dnf install -y --allowerasing \
@@ -340,6 +350,7 @@ copy_docker_db() {
 main() {
     preflight_checks
     install_packages
+    setup_flatpak
     install_multimedia
     install_nvidia
     install_icon_themes
