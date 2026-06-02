@@ -205,16 +205,25 @@ set_copr_priority() {
 }
 
 sudo dnf copr enable -y lionheartp/Hyprland 2>/dev/null || warn "Failed to enable lionheartp/Hyprland copr"
-set_copr_priority "lionheartp:Hyprland" 110
+set_copr_priority "lionheartp:Hyprland" 100
 sudo dnf copr enable -y mindset/Mindset-Apps 2>/dev/null || warn "Failed to enable mindset/Mindset-Apps copr"
+set_copr_priority "mindset:Mindset-Apps" 100
 sudo dnf copr enable -y avengemedia/dms 2>/dev/null || warn "Failed to enable avengemedia/dms copr"
+set_copr_priority "avengemedia:dms" 100
 sudo dnf copr enable -y avengemedia/danklinux 2>/dev/null || warn "Failed to enable avengemedia/danklinux copr"
+set_copr_priority "avengemedia:danklinux" 100
 sudo dnf copr enable -y rafatosta/zapzap 2>/dev/null || warn "Failed to enable rafatosta/zapzap copr"
+set_copr_priority "rafatosta:zapzap" 100
 sudo dnf copr enable -y linuxgamerlife/lgl-scxctl-manager 2>/dev/null || warn "Failed to enable linuxgamerlife/lgl-scxctl-manager copr"
+set_copr_priority "linuxgamerlife:lgl-scxctl-manager" 100
 sudo dnf copr enable -y linuxgamerlife/lgl-system-loadout 2>/dev/null || warn "Failed to enable linuxgamerlife/lgl-system-loadout copr"
+set_copr_priority "linuxgamerlife:lgl-system-loadout" 100
 sudo dnf copr enable -y bieszczaders/kernel-cachyos 2>/dev/null || warn "Failed to enable bieszczaders/kernel-cachyos copr"
+set_copr_priority "bieszczaders:kernel-cachyos" 100
 sudo dnf copr enable -y bieszczaders/kernel-cachyos-addons 2>/dev/null || warn "Failed to enable bieszczaders/kernel-cachyos-addons copr"
+set_copr_priority "bieszczaders:kernel-cachyos-addons" 100
 sudo dnf copr enable -y peterwu/rendezvous 2>/dev/null || warn "Failed to enable peterwu/rendezvous copr"
+set_copr_priority "peterwu:rendezvous" 100
 
 # ── ASUS (priority 110, lowest) ────────────────────────────────
 if grep -qi "asus\|rog" /sys/devices/virtual/dmi/id/product_name 2>/dev/null; then

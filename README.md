@@ -50,19 +50,11 @@ sudo reboot
 
 - **Mirror priority:** Alibaba Cloud (17ms) → RIKEN Japan (89ms) → Fedora default
 - **RPM Fusion:** Free + NonFree
-- **Terra:** priority 150
-- **Brave Browser**
-- **NVIDIA CUDA:** `cuda-fedora44.repo` (priority 90)
-- **COPRs:** semua priority default 99, kecuali:
+- **Terra:** priority 150 (terendah)
+- **Brave Browser:** default
+- **NVIDIA CUDA:** `cuda-fedora44.repo` (priority 90 — tertinggi)
+- **COPRs:** semua priority 100, kecuali:
   - `lukenukem/asus-linux` (priority 110, hanya ASUS)
-  - `lionheartp/Hyprland` (priority 110)
-  - `mindset/Mindset-Apps`, `avengemedia/dms`, `avengemedia/danklinux`
-  - `rafatosta/zapzap`
-  - `linuxgamerlife/lgl-scxctl-manager`
-  - `linuxgamerlife/lgl-system-loadout`
-  - `bieszczaders/kernel-cachyos`
-  - `bieszczaders/kernel-cachyos-addons`
-  - `peterwu/rendezvous`
   - `bieszczaders/kernel-cachyos`
   - `bieszczaders/kernel-cachyos-addons`
 
