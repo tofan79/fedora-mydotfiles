@@ -138,19 +138,35 @@ PRIMEEOF
     log_ok "NVIDIA drivers installed. Reboot required."
 }
 
-install_tela_icon_theme() {
-    log_info "Installing Tela icon theme..."
-    if ls ~/.local/share/icons/Tela* &>/dev/null 2>&1 || ls /usr/share/icons/Tela* &>/dev/null 2>&1; then
-        log_ok "Tela already installed."; return 0
-    fi
-    local temp_dir="/tmp/tela-icon-theme"
-    rm -rf "$temp_dir"
-    if git clone --depth 1 https://github.com/vinceliuice/Tela-icon-theme.git "$temp_dir"; then
-        (cd "$temp_dir" && ./install.sh -a) || log_warn "Tela install script failed"
-        rm -rf "$temp_dir"
-        log_ok "Tela icon theme installed."
+install_icon_themes() {
+    log_info "Installing WhiteSur icon theme..."
+    if ls ~/.local/share/icons/WhiteSur* &>/dev/null 2>&1; then
+        log_ok "WhiteSur already installed."
     else
-        log_warn "Failed to clone Tela. Skipping."
+        local temp_dir="/tmp/whitesur-icon"
+        rm -rf "$temp_dir"
+        if git clone --depth 1 https://github.com/vinceliuice/WhiteSur-icon-theme.git "$temp_dir"; then
+            (cd "$temp_dir" && ./install.sh -a) || log_warn "WhiteSur install script failed"
+            rm -rf "$temp_dir"
+            log_ok "WhiteSur icon theme installed."
+        else
+            log_warn "Failed to clone WhiteSur. Skipping."
+        fi
+    fi
+
+    log_info "Installing Tela icon theme..."
+    if ls ~/.local/share/icons/Tela* &>/dev/null 2>&1; then
+        log_ok "Tela already installed."
+    else
+        local temp_dir="/tmp/tela-icon-theme"
+        rm -rf "$temp_dir"
+        if git clone --depth 1 https://github.com/vinceliuice/Tela-icon-theme.git "$temp_dir"; then
+            (cd "$temp_dir" && ./install.sh -a) || log_warn "Tela install script failed"
+            rm -rf "$temp_dir"
+            log_ok "Tela icon theme installed."
+        else
+            log_warn "Failed to clone Tela. Skipping."
+        fi
     fi
 }
 
@@ -318,7 +334,7 @@ main() {
     install_packages
     install_multimedia
     install_nvidia
-    install_tela_icon_theme
+    install_icon_themes
     install_bibata_cursor
     setup_nerd_fonts
     setup_zsh
