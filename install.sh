@@ -185,6 +185,9 @@ install_bibata_cursor() {
     else
         log_warn "Bibata cursor unavailable."
     fi
+    log_info "Setting Bibata-Modern-Ice as default cursor..."
+    gsettings set org.gnome.desktop.interface cursor-theme "Bibata-Modern-Ice"
+    log_ok "Bibata cursor set as default."
 }
 
 setup_nerd_fonts() {
