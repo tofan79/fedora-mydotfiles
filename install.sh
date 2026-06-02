@@ -80,7 +80,7 @@ dnf_install_optional() {
 
 install_packages() {
     log_info "Installing packages..."
-    sudo dnf group install -y "Development Tools" || log_warn "Development Tools group failed."
+    sudo dnf install -y gcc gcc-c++ make autoconf automake libtool pkgconf-pkg-config flex bison gettext || log_warn "Some dev tools unavailable."
 
     dnf_install_required \
         git curl wget2-wget rsync \
@@ -159,18 +159,12 @@ install_bibata_cursor() {
     if ls ~/.local/share/icons/Bibata* &>/dev/null 2>&1 || ls /usr/share/icons/Bibata* &>/dev/null 2>&1; then
         log_ok "Bibata cursor already installed."; return 0
     fi
-    local temp_dir="/tmp/bibata-cursor"
-    rm -rf "$temp_dir"
-    if git clone --depth 1 https://github.com/ful1e5/Bibata_Cursor.git "$temp_dir"; then
-        mkdir -p "$HOME/.local/share/icons"
-        [[ -d "$temp_dir/themes" ]] && cp -r "$temp_dir"/themes/Bibata-* "$HOME/.local/share/icons/" 2>/dev/null || true
-        if ! ls "$HOME/.local/share/icons"/Bibata* &>/dev/null 2>&1 && [[ -x "$temp_dir/install.sh" ]]; then
-            (cd "$temp_dir" && ./install.sh -d "$HOME/.local/share/icons") 2>/dev/null || true
-        fi
-        rm -rf "$temp_dir"
+    sudo dnf copr enable -y peterwu/rendezvous 2>/dev/null || log_warn "Failed to enable peterwu/rendezvous copr"
+    if sudo dnf install -y bibata-cursor-themes; then
+        log_ok "Bibata cursor installed."
+    else
+        log_warn "Bibata cursor unavailable."
     fi
-    ls ~/.local/share/icons/Bibata* &>/dev/null 2>&1 || ls /usr/share/icons/Bibata* &>/dev/null 2>&1 && \
-        log_ok "Bibata cursor installed." || log_warn "Bibata cursor unavailable."
 }
 
 setup_nerd_fonts() {
@@ -294,7 +288,7 @@ copy_dotfiles() {
     # Zsh dotfiles sudah di-handle setup_zsh
     # Clean script — copy ke home biar gampang diakses
     if [[ -f "${SCRIPT_DIR}/dotfiles/clean/clean.sh" ]]; then
-        cp "${SCRIPT_DIR}/dotfiles/clean/clean.sh" "$HOME/clean.sh" 2>/dev/null && chmod +x "$HOME/clean.sh" && log_ok "clean.sh copied."
+        mkdir -p "$HOME/.config/clean" && cp "${SCRIPT_DIR}/dotfiles/clean/clean.sh" "$HOME/.config/clean/clean.sh" 2>/dev/null && chmod +x "$HOME/.config/clean/clean.sh" && log_ok "clean.sh copied."
     fi
 
     log_ok "Dotfiles copied."
