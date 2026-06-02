@@ -8,7 +8,7 @@ Setup Fedora 44 untuk ASUS TUF Gaming A15 FA506ICB (RTX 3050) dengan MangoWM + D
 - SDDM + MangoWM + DMS (DankMaterialShell)
 - Zsh + Powerlevel10k
 - Official NVIDIA `nvidia-open` (bukan RPM Fusion akmod)
-- Kernel bawaan Fedora 44 (sched-ext support via `scx-tools`)
+- CachyOS kernel + sched-ext (scx-scheds, scx-manager)
 
 ## Cara Pakai
 
@@ -39,8 +39,8 @@ sudo reboot
 
 | Script | Fungsi |
 |--------|--------|
-| `repo.sh` | DNF config + mirror Alibaba/RIKEN, RPM Fusion, Terra, Brave, NVIDIA CUDA, 7 COPRs |
-| `install.sh` | Core packages, multimedia, NVIDIA official, Tela/Bibata, Nerd Fonts, Zsh+OMZ+P10k, mise, opencode, semua dotfiles, wallpapers, docker-db |
+| `repo.sh` | DNF config + mirror Alibaba/RIKEN, RPM Fusion, Terra, Brave, NVIDIA CUDA, 9 COPRs |
+| `install.sh` | Core packages, multimedia, NVIDIA official, WhiteSur/Tela icons, Bibata cursor, Nerd Fonts, Zsh+OMZ+P10k, mise, opencode, semua dotfiles, wallpapers, docker-db |
 | `mango.sh` | MangoWM (mindset-apps COPR), DMS + quickshell-git + dependencies |
 | `apps.sh` | Nautilus, browser, Neovim, Yazi, GNOME tools, Telegram, ZapZap, ASUS tools, lgl-system-loadout |
 | `gaming.sh` | GameMode, MangoHud, Steam, Wine, Vulkan 32-bit, SCX scheduler tools (scx-tools, scx-scheds, lgl-scxctl-manager) |
@@ -60,6 +60,8 @@ sudo reboot
   - `rafatosta/zapzap`
   - `linuxgamerlife/lgl-scxctl-manager`
   - `linuxgamerlife/lgl-system-loadout`
+  - `bieszczaders/kernel-cachyos`
+  - `bieszczaders/kernel-cachyos-addons`
 
 ## install.sh Detail
 
@@ -86,8 +88,9 @@ ffmpeg, gstreamer1-plugins-*, lame, x264, x265 + swap ffmpeg-free → ffmpeg
 - **Wrapper:** `prime-run` di `/usr/local/bin/prime-run`
 
 ### Icons, Cursor, Fonts
-- Tela icon theme (vinceliuice/Tela-icon-theme)
-- Bibata cursor (ful1e5/Bibata_Cursor)
+- WhiteSur icon theme (default, vinceliuice/WhiteSur-icon-theme)
+- Tela icon theme (fallback, vinceliuice/Tela-icon-theme)
+- Bibata-Modern-Ice cursor (COPR peterwu/rendezvous)
 - Nerd Fonts: JetBrainsMono + FiraCode
 
 ### Zsh
@@ -105,8 +108,8 @@ ffmpeg, gstreamer1-plugins-*, lame, x264, x265 + swap ffmpeg-free → ffmpeg
 | `dotfiles/nvim/` → `~/.config/nvim/` | lazy.nvim, 16 tema, LSP servers, blink-cmp, snacks |
 | `dotfiles/kitty/` → `~/.config/kitty/` | Kitty + DMS theme includes |
 | `dotfiles/mango/` → `~/.config/mango/` | **Modular:** env, monitor, layouts, settings, keybinds, rules, dms/ |
-| `dotfiles/gtk-3.0/` → `~/.config/gtk-3.0/` | GTK3 dank theme |
-| `dotfiles/gtk-4.0/` → `~/.config/gtk-4.0/` | GTK4 dank theme |
+| `dotfiles/gtk-3.0/` → `~/.config/gtk-3.0/` | GTK3 Pocillo-dark, WhiteSur icons, Bibata cursor |
+| `dotfiles/gtk-4.0/` → `~/.config/gtk-4.0/` | GTK4 Pocillo-dark, WhiteSur icons, Bibata cursor |
 | `dotfiles/qt5ct/` → `~/.config/qt5ct/` | Qt5 theme |
 | `dotfiles/qt6ct/` → `~/.config/qt6ct/` | Qt6 theme |
 | `dotfiles/zed/` → `~/.config/zed/` | Zed dank theme |
@@ -160,8 +163,8 @@ ffmpeg, gstreamer1-plugins-*, lame, x264, x265 + swap ffmpeg-free → ffmpeg
 | `dotfiles/zsh/.p10k.zsh` | Powerlevel10k lean style, 2-line, transient prompt |
 | `dotfiles/kitty/kitty.conf` | Font 12, padding 14, opacity 0.9, tab bar powerline, DMS themes |
 | `dotfiles/nvim/` | lazy.nvim, 16 tema, 14 LSP servers, blink-cmp, snacks, noice, gitsigns, dap, conform |
-| `dotfiles/gtk-3.0/` | dank-colors theme |
-| `dotfiles/gtk-4.0/` | dank-colors theme |
+| `dotfiles/gtk-3.0/` | Pocillo-dark, WhiteSur icons, Bibata cursor |
+| `dotfiles/gtk-4.0/` | Pocillo-dark, WhiteSur icons, Bibata cursor |
 | `dotfiles/qt5ct/` | Fusion style, Papirus-Dark, noctalia colors |
 | `dotfiles/qt6ct/` | Qt6 theme matching |
 | `dotfiles/zed/` | dank-zed-theme |
