@@ -39,7 +39,7 @@ sudo reboot
 
 | Script | Fungsi |
 |--------|--------|
-| `repo.sh` | DNF config + mirror Alibaba/RIKEN, RPM Fusion, Terra, Brave, NVIDIA CUDA, 9 COPRs |
+| `repo.sh` | DNF config + mirror Alibaba/RIKEN, RPM Fusion, Terra, Brave, NVIDIA CUDA, 12 COPRs |
 | `install.sh` | Core packages, multimedia, NVIDIA official, WhiteSur/Tela icons, Bibata cursor, Nerd Fonts, Zsh+OMZ+P10k, mise, opencode, semua dotfiles, wallpapers, docker-db |
 | `mango.sh` | MangoWM (mindset-apps COPR), DMS + quickshell-git + dependencies |
 | `apps.sh` | Nautilus, browser, Neovim, Yazi, GNOME tools, Telegram, ZapZap, ASUS tools, lgl-system-loadout |
@@ -60,6 +60,9 @@ sudo reboot
   - `rafatosta/zapzap`
   - `linuxgamerlife/lgl-scxctl-manager`
   - `linuxgamerlife/lgl-system-loadout`
+  - `bieszczaders/kernel-cachyos`
+  - `bieszczaders/kernel-cachyos-addons`
+  - `peterwu/rendezvous`
   - `bieszczaders/kernel-cachyos`
   - `bieszczaders/kernel-cachyos-addons`
 

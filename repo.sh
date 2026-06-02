@@ -212,6 +212,9 @@ sudo dnf copr enable -y avengemedia/danklinux 2>/dev/null || warn "Failed to ena
 sudo dnf copr enable -y rafatosta/zapzap 2>/dev/null || warn "Failed to enable rafatosta/zapzap copr"
 sudo dnf copr enable -y linuxgamerlife/lgl-scxctl-manager 2>/dev/null || warn "Failed to enable linuxgamerlife/lgl-scxctl-manager copr"
 sudo dnf copr enable -y linuxgamerlife/lgl-system-loadout 2>/dev/null || warn "Failed to enable linuxgamerlife/lgl-system-loadout copr"
+sudo dnf copr enable -y bieszczaders/kernel-cachyos 2>/dev/null || warn "Failed to enable bieszczaders/kernel-cachyos copr"
+sudo dnf copr enable -y bieszczaders/kernel-cachyos-addons 2>/dev/null || warn "Failed to enable bieszczaders/kernel-cachyos-addons copr"
+sudo dnf copr enable -y peterwu/rendezvous 2>/dev/null || warn "Failed to enable peterwu/rendezvous copr"
 
 # ── ASUS (priority 110, lowest) ────────────────────────────────
 if grep -qi "asus\|rog" /sys/devices/virtual/dmi/id/product_name 2>/dev/null; then
