@@ -154,6 +154,10 @@ install_icon_themes() {
         fi
     fi
 
+    log_info "Setting WhiteSur as default icon theme..."
+    gsettings set org.gnome.desktop.interface icon-theme "WhiteSur"
+    log_ok "WhiteSur set as default."
+
     log_info "Installing Tela icon theme..."
     if ls ~/.local/share/icons/Tela* &>/dev/null 2>&1; then
         log_ok "Tela already installed."
