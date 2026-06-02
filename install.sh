@@ -107,7 +107,7 @@ install_packages() {
 install_multimedia() {
     log_info "Installing multimedia codecs..."
     sudo dnf install -y --allowerasing \
-        ffmpeg gstreamer1-plugins-good gstreamer1-plugins-bad-free \
+        ffmpeg mesa-va-drivers-freeworld gstreamer1-plugins-good gstreamer1-plugins-bad-free \
         gstreamer1-plugins-bad-freeworld gstreamer1-plugins-ugly \
         gstreamer1-plugin-openh264 lame x264 x265 || \
         log_warn "Some multimedia codecs could not be installed."
