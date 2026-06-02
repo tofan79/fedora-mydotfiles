@@ -18,6 +18,7 @@ exec > >(tee -a "$LOG_FILE") 2>&1
 trap 'log_err "Failed at line ${LINENO}: ${BASH_COMMAND}"' ERR
 
 detect_os() {
+    # shellcheck source=/dev/null
     [[ -f /etc/os-release ]] && . /etc/os-release
     [[ "${ID:-}" == "fedora" ]] || { log_err "Fedora only."; exit 1; }
 }

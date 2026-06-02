@@ -81,7 +81,9 @@ MANGOEOF
 
 configure_gamemode() {
     rpm -q gamemode &>/dev/null || { log_warn "gamemode not installed."; return 0; }
-    getent group gamemode &>/dev/null && sudo usermod -aG gamemode "$USER" 2>/dev/null || true
+    if getent group gamemode &>/dev/null; then
+        sudo usermod -aG gamemode "$USER" 2>/dev/null || true
+    fi
     systemctl --user enable --now gamemoded 2>/dev/null || true
     log_ok "gamemode configured."
 }

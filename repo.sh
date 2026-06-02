@@ -32,7 +32,9 @@ warn()   { echo "  [WARN]  $*"; }
 # ── DNF config ────────────────────────────────────────────────
 info "Configuring DNF..."
 sudo mkdir -p /etc/dnf
-[[ -f /etc/dnf/dnf.conf ]] && sudo cp /etc/dnf/dnf.conf "/etc/dnf/dnf.conf.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+if [[ -f /etc/dnf/dnf.conf ]]; then
+    sudo cp /etc/dnf/dnf.conf "/etc/dnf/dnf.conf.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+fi
 sudo tee /etc/dnf/dnf.conf > /dev/null << 'DNFEOF'
 [main]
 max_parallel_downloads=5
@@ -46,8 +48,8 @@ ok "DNF configured."
 info "Switching Fedora repos to baseurl..."
 
 # Literal $releasever / $basearch untuk DNF (jangan di-expand bash)
-rel='$releasever'
-basearch='$basearch'
+rel="\$releasever"
+basearch="\$basearch"
 os_base=$(fedora_baseurls "releases/${rel}/Everything/${basearch}/os/")
 debug_base=$(fedora_baseurls "releases/${rel}/Everything/${basearch}/debug/tree/")
 source_base=$(fedora_baseurls "releases/${rel}/Everything/source/tree/")

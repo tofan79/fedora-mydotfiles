@@ -20,6 +20,7 @@ trap 'log_err "Failed at line ${LINENO}: ${BASH_COMMAND}"' ERR
 
 detect_os() {
     if [[ -f /etc/os-release ]]; then
+        # shellcheck source=/dev/null
         . /etc/os-release
         if [[ "${ID:-}" != "fedora" ]]; then
             log_err "Unsupported: ${ID:-unknown}. This script is for Fedora only."
@@ -100,14 +101,16 @@ install_packages() {
         eza pamixer wlsunset adw-gtk3-theme \
         lm_sensors
 
-    command -v sensors-detect &>/dev/null && sudo sensors-detect --auto 2>/dev/null || true
+    if command -v sensors-detect &>/dev/null; then
+        sudo sensors-detect --auto 2>/dev/null || true
+    fi
     log_ok "Packages installed."
 }
 
 setup_flatpak() {
     command -v flatpak &>/dev/null || { log_warn "Flatpak not installed."; return 0; }
     log_info "Adding Flathub remote..."
-    if sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
+    if flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo; then
         log_ok "Flathub remote ready."
     else
         log_warn "Failed to add Flathub remote."
@@ -164,14 +167,6 @@ install_icon_themes() {
         fi
     fi
 
-    log_info "Setting WhiteSur as default icon theme..."
-    gsettings set org.gnome.desktop.interface icon-theme "WhiteSur"
-    log_ok "WhiteSur set as default."
-
-    log_info "Setting Bibata-Modern-Ice as default cursor..."
-    gsettings set org.gnome.desktop.interface cursor-theme "Bibata-Modern-Ice"
-    log_ok "Bibata cursor set as default."
-
     log_info "Installing Tela icon theme..."
     if ls ~/.local/share/icons/Tela* &>/dev/null 2>&1; then
         log_ok "Tela already installed."
@@ -205,7 +200,8 @@ setup_nerd_fonts() {
     log_info "Installing Nerd Fonts..."
     local fonts_dir="$HOME/.local/share/fonts"
     mkdir -p "$fonts_dir"
-    local temp_dir="$(mktemp -d)"
+    local temp_dir
+    temp_dir="$(mktemp -d)"
     for font in JetBrainsMono FiraCode; do
         local tmp_zip="$temp_dir/${font}.zip"
         if curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${font}.zip" -o "$tmp_zip"; then

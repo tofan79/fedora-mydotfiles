@@ -88,10 +88,29 @@ fix_terminal_desktop() {
     done
 }
 
+apply_icon_cursor_settings() {
+    command -v gsettings &>/dev/null || { log_warn "gsettings not available. Skipping icon/cursor apply."; return 0; }
+
+    log_info "Setting WhiteSur as default icon theme..."
+    if gsettings set org.gnome.desktop.interface icon-theme "WhiteSur" 2>/dev/null; then
+        log_ok "WhiteSur set as default."
+    else
+        log_warn "Failed to apply WhiteSur icon theme (session may be inactive)."
+    fi
+
+    log_info "Setting Bibata-Modern-Ice as default cursor..."
+    if gsettings set org.gnome.desktop.interface cursor-theme "Bibata-Modern-Ice" 2>/dev/null; then
+        log_ok "Bibata cursor set as default."
+    else
+        log_warn "Failed to apply Bibata cursor theme (session may be inactive)."
+    fi
+}
+
 main() {
     preflight_checks
     install_core_app_support
     fix_terminal_desktop
+    apply_icon_cursor_settings
     log_ok "Fedora app support complete. Log: ${LOG_FILE}"
 }
 
