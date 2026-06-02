@@ -63,7 +63,13 @@ install_core_app_support() {
         systemctl --user enable --now podman.socket 2>/dev/null || true
         log_ok "podman socket enabled."
     fi
-    sudo systemctl enable --now asusd 2>/dev/null || true
+
+    if command -v asusctl &>/dev/null; then
+        log_info "Configuring ASUS daemon..."
+        sudo mkdir -p /etc/asusd
+        sudo systemctl enable --now asusd 2>/dev/null || true
+        log_ok "ASUS daemon configured."
+    fi
     log_ok "Core desktop app support installed."
 }
 
