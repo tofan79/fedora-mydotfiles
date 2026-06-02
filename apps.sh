@@ -53,7 +53,7 @@ install_core_app_support() {
         yazi neovim btop mpv imv gnome-disk-utility gnome-calculator file-roller seahorse gnome-keyring \
         tesseract tesseract-langpack-eng ImageMagick \
         xdg-desktop-portal-gtk xdg-utils xdg-user-dirs python3-gobject loupe wtype wdisplays \
-        ncdu httpie bind-utils whois traceroute mtr socat nmap gh strace \
+        ncdu httpie bind-utils whois traceroute mtr socat nmap gh strace pipx \
         brave-browser telegram-desktop zapzap asusctl asusctl-rog-gui lgl-system-loadout
 
     log_info "Installing LocalSend and Zen Browser from Mindset-Apps COPR when available..."
