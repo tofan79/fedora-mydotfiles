@@ -275,7 +275,6 @@ copy_dotfiles() {
         ["cava"]=".config/cava"
         ["yazi"]=".config/yazi"
         ["zed"]=".config/zed"
-        ["easyeffects"]=".config/easyeffects"
         ["environment.d"]=".config/environment.d"
     )
     for src in "${!config_map[@]}"; do
