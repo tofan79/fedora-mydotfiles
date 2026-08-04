@@ -7,9 +7,9 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-source /usr/share/cachyos-zsh-config/cachyos-config.zsh
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+source ~/.config/powerlevel10k/powerlevel10k.zsh-theme
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 # ---- PATH ----
@@ -38,14 +38,13 @@ alias dpa='docker ps -a'
 alias di='docker images'
 alias dex='docker exec -it'
 alias dlog='docker logs -f'
-# ---- CachyOS / Arch ----
-alias update='shelly -U && mise self-update && mise upgrade && grit update'
+# ---- Fedora ----
+alias update='sudo dnf upgrade --refresh && mise self-update && mise upgrade'
 alias upai='opencode upgrade && mimo upgrade && kiro-cli update && npm update -g @google/gemini-cli'
-alias install='sudo pacman -S'
-alias remove='sudo pacman -Rns'
-alias search='pacman -Ss'
-alias aur='paru -S'
-alias list='shelly -P'
+alias install='sudo dnf install'
+alias remove='sudo dnf remove'
+alias search='dnf search'
+alias list='dnf list --installed'
 alias clean='~/.config/clean/clean.sh'
 alias jctl="journalctl -p 3 -xb"
 alias psmem='ps auxf | sort -nr -k 4'
@@ -91,3 +90,9 @@ export PATH="$PATH:$HOME/.config/composer/vendor/bin"
 # mimocode
 export PATH=/home/mindset/.mimocode/bin:$PATH
 alias upskill="npx skills update"
+
+# ---- Zsh plugins (autosuggestions, syntax-highlighting, completions) ----
+source ~/.oh-my-zsh/custom/plugins/zsh-completions/zsh-completions.plugin.zsh
+autoload -Uz compinit && compinit
+source ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions/zsh-autosuggestions.plugin.zsh
+source ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.plugin.zsh

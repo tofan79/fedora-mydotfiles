@@ -1,4 +1,4 @@
-config_version = 7
+config_version = 12
 
 [audio]
 enable_overdrive = true
@@ -150,7 +150,6 @@ widget_order = [
         show_caps_lock = true
         show_keyboard_layout = true
         show_login_button = false
-        show_password_hint = true
         show_session_buttons = true
 
     [lockscreen_widgets.widget.lockscreen-widget-0000000000000001]
@@ -326,8 +325,7 @@ enabled = [
     "nightwatch75/todo",
     "nightwatch75/file-search",
     "cleboost/zed-provider",
-    "kenn/keybind-cheatsheet",
-    "gustav0ar/drive-health"
+    "kenn/keybind-cheatsheet"
 ]
 
 [shell]
@@ -410,13 +408,13 @@ transition_on_startup = true
     interval_seconds = 600
 
     [wallpaper.default]
-    path = "/home/mindset/Pictures/Wallpapers/wallhaven-lyj5gl.jpg"
+    path = "/home/mindset/Pictures/Wallpapers/BG02.png"
 
     [wallpaper.last]
-    path = "/home/mindset/Pictures/Wallpapers/wallhaven-lyj5gl.jpg"
+    path = "/home/mindset/Pictures/Wallpapers/BG02.png"
 
     [wallpaper.monitors.eDP-1]
-    path = "/home/mindset/Pictures/Wallpapers/wallhaven-lyj5gl.jpg"
+    path = "/home/mindset/Pictures/Wallpapers/BG02.png"
 
     [[wallpaper.favorite]]
     palette_source = "wallpaper"

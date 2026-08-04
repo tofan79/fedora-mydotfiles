@@ -2,7 +2,7 @@
 # hyprland-noctalia.sh — Hyprland + Noctalia for Fedora
 # (meniru daftar dependensi install.sh dari CachyOS-mydotfiles)
 #   hyprland + rofi + cliphist + xdg-desktop-portal-hyprland +
-#   hyprpicker + sddm + switcheroo-control + noctalia + gnome-keyring
+#   hyprpicker + sddm + switcheroo-control + noctalia + gnome-keyring + dolphin
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -68,7 +68,7 @@ install_packages() {
     log_info "Installing Hyprland stack (mirror CachyOS)..."
     # Hyprland stable dari repo resmi Fedora + tools pendukung
     # (rofi 2.0 di Fedora sudah Wayland-native — tidak perlu rofi-wayland)
-    dnf_install hyprland rofi cliphist xdg-desktop-portal-hyprland hyprpicker
+    dnf_install hyprland rofi cliphist xdg-desktop-portal-hyprland hyprpicker dolphin
     # DM & hybrid (mirror CachyOS: sddm, switcheroo-control)
     dnf_install sddm switcheroo-control
     # GPU NVIDIA optional (akmod-nvidia dipasang install.sh; di sini cek ada)
