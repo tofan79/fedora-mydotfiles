@@ -1,0 +1,9 @@
+#!/bin/bash
+# Open foot terminal in the current directory
+if [ -n "$NAUTILUS_SCRIPT_CURRENT_URI" ]; then
+    DIR="${NAUTILUS_SCRIPT_CURRENT_URI#file://}"
+    DIR=$(echo "$DIR" | sed 's/%20/ /g')
+else
+    DIR="$PWD"
+fi
+foot --working-directory="$DIR" &

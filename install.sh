@@ -91,7 +91,7 @@ install_packages() {
         lsof pciutils usbutils hwinfo smartmontools \
         grim slurp wl-clipboard brightnessctl playerctl \
         eza pamixer wlsunset lm_sensors ddcutil dua-cli btop \
-        alsa-utils dbus-tools neovim dolphin
+        alsa-utils dbus-tools neovim nautilus
     try_sensors
 
     # Fonts (mirror CachyOS)
