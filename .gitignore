@@ -1,0 +1,4 @@
+*.bak
+*.log
+dotfiles/zen/
+dotfiles/mango/theme.conf.bak
