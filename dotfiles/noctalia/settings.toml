@@ -51,9 +51,6 @@ refresh_minutes = 5
     name = "Shiin"
     type = "google"
 
-[control_center.calendar]
-show_events_card = false
-
 [[control_center.shortcuts]]
 type = "wifi"
 
@@ -383,20 +380,22 @@ source = "community"
 wallpaper_scheme = "m3-tonal-spot"
 
     [theme.templates]
-    builtin_ids = [ "btop", "cava", "foot", "gtk3", "gtk4", "hyprland", "qt" ]
+    builtin_ids = [ "btop", "cava", "foot", "gtk3", "gtk4", "hyprland", "kcolorscheme", "qt" ]
     community_ids = [
+        "opencode",
         "zen-browser",
+        "telegram",
         "neovim",
         "zed",
-        "rofi",
-        "bat",
         "heroiclauncher",
-        "obs",
-        "opencode",
         "steam",
-        "telegram",
-        "yazi",
-        "hyprtoolkit"
+        "rofi",
+        "obs",
+        "hyprtoolkit",
+        "papirus-icons",
+        "bat",
+        "lazygit",
+        "yazi"
     ]
 
 [wallpaper]
@@ -408,13 +407,13 @@ transition_on_startup = true
     interval_seconds = 600
 
     [wallpaper.default]
-    path = "/home/mindset/Pictures/Wallpapers/BG02.png"
+    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
 
     [wallpaper.last]
-    path = "/home/mindset/Pictures/Wallpapers/BG02.png"
+    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
 
     [wallpaper.monitors.eDP-1]
-    path = "/home/mindset/Pictures/Wallpapers/BG02.png"
+    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
 
     [[wallpaper.favorite]]
     palette_source = "wallpaper"
