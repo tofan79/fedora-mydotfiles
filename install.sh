@@ -214,6 +214,10 @@ setup_nerd_fonts() {
 
 apply_icon_settings() {
     command -v gsettings >/dev/null 2>&1 || { log_warn "gsettings tak tersedia."; return; }
+    gsettings set org.gnome.desktop.interface gtk-theme "Nordic" 2>/dev/null \
+        && log_ok "GTK theme Nordic set." || log_warn "set gtk-theme gagal."
+    gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null \
+        && log_ok "Color scheme prefer-dark set." || log_warn "set color-scheme gagal."
     gsettings set org.gnome.desktop.interface icon-theme "Tela-nord-dark" 2>/dev/null \
         && log_ok "Tela-nord-dark set." || log_warn "set icon-theme gagal."
     gsettings set org.gnome.desktop.interface cursor-theme "Bibata-Modern-Ice" 2>/dev/null \
