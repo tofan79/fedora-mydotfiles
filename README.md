@@ -1,6 +1,6 @@
 # Fedora My Dotfiles
 
-Setup feedora untuk **ASUS TUF Gaming A15 FA506ICB** — AMD Renoir (iGPU) + NVIDIA RTX 3050 (dGPU), Hyprland + Noctalia.
+Setup Fedora untuk **ASUS TUF Gaming A15 FA506ICB** — AMD Renoir (iGPU) + NVIDIA RTX 3050 (dGPU), Hyprland + Noctalia.
 
 Keputusan utama (berbeda dari versi CachyOS/Arch yang asal):
 - **Migrasi** dari Arch/AUR ke **Fedora (tradisional)**, pakai `dnf` + RPM Fusion + COPR, bukan `pacman`.
@@ -22,7 +22,7 @@ chmod +x *.sh
 | 1 | `./kernel.sh` | Menu kernel optimasi: 1) CachyOS bundle (LTO+addons+SCX), 2) `kernel-p03` (opsional), 3) rollback stock, 4) list. NVIDIA **tidak** di sini |
 | 2 | **REBOOT** → pilih kernel pilihan di GRUB (Advanced options) |
 | 3 | `./install.sh` | Paket inti: toolchain, CLI, fonts, tema, codecs, `akmod-nvidia`, zsh+OMZ+P10k, mise, opencode, dotfiles, wallpaper. **Setelah reboot** (biar NVIDIA di-build utk kernel aktif) |
-| 4 | `./hyprland-noctalia.sh` | Hyprland + Noctalia + rofi-wayland + cliphist + portal + switcheroo + SDDM + polkit fix |
+| 4 | `./hyprland-noctalia.sh` | Hyprland + Noctalia + rofi + cliphist + portal + switcheroo + SDDM + polkit fix |
 | 5 | `./budgie-clean.sh` | **Opsional** — bersihkan Budgie DE (jika install dari spin Budgie) |
 
 Urutan logis: `repo.sh` → reboot (jika ganti kernel) → `install.sh` → `hyprland-noctalia.sh`.
@@ -44,7 +44,7 @@ Konfigurasi DNF & repositori Fedora:
 ### `kernel.sh` (interaktif & idempotent)
 
 Menu pilihan kernel untuk Ryzen 7 4800H:
-1. **CachyOS bundle** (rekomendasi) — `kernel-cachyos-lto` + `kernel-cachyos-addons` + `lgl-scxctl-manager` (SCX scheduler). Driver di-rebuild via `akmods` untuk kernel baru.
+1. **CachyOS bundle** (rekomendasi) — `kernel-cachyos-lto` (COPR `bieszczaders/kernel-cachyos-lto`) + `ananicy-cpp` (addons auto-prioritas, COPR `bieszczaders/kernel-cachyos-addons`) + `lgl-scxctl-manager` (SCX scheduler, COPR `linuxgamerlife/lgl-scxctl-manager`). Driver di-rebuild via `akmods` untuk kernel baru.
 2. **`kernel-p03`** (`catpieleaf/kernel-p03`) — opsi eksperimen, hanya p03 (bukan default).
 3. **Rollback** — kembalikan ke kernel stock Fedora.
 4. **Info** kernel ter-install.
@@ -55,27 +55,32 @@ NVIDIA sengaja disimpan di `install.sh` (dijalankan setelah reboot ke kernel pil
 
 **Paket inti:**
 - **Dev:** group `@development-tools`.
-- **Essentials/CLI:** `git curl wget rsync libva-utils foot flatpak cmake meson ninja-build python3 python3-pip shellcheck openssh` + `bat fzf zoxide fastfetch jq tmux ripgrep fd-find tree unzip zip bc lsof pciutils usbutils hwinfo grim slurp wl-clipboard brightnessctl playerctl eza pamixer wlsunset lm_sensors ddcutil dua-cli btop`.
+- **Essentials/CLI:** `git curl wget2 rsync coreutils findutils libva-utils foot flatpak cmake meson ninja-build python3 python3-pip ShellCheck openssh openssl` + `bat fzf zoxide fastfetch jq tmux ripgrep fd-find tree unzip zip bc lsof pciutils usbutils hwinfo smartmontools alsa-utils dbus-tools neovim nautilus` + `grim slurp wl-clipboard brightnessctl playerctl eza pamixer wlsunset lm_sensors ddcutil dua-cli btop`.
 - **Fonts:** `jetbrains-mono-fonts google-noto-sans-fonts google-noto-color-emoji-fonts adobe-source-code-pro-fonts`.
-- **GTK/Qt tema & ikon:** `qt5ct qt6ct gtk3 gtk4 libadwaita adwaita-icon-theme papirus-icon-theme nordic-theme bibata-cursor-themes tela-icon-theme`.
-- **Codecs:** `gstreamer1-plugins-* gstreamer1-libav ffmpeg-free` + `x264 x265`.
+- **GTK/Qt tema & ikon:** `qt5ct qt6ct gtk3 gtk4 libadwaita adwaita-icon-theme papirus-icon-theme bibata-cursor-theme tela-icon-theme` (tema Nordic di-clone dari GitHub oleh `setup_nordic_theme`).
+- **Codecs:** `gstreamer1-plugins-base/good/bad-free/bad-free-extras/ugly-free` + `gstreamer1-plugin-libav ffmpeg-free` + `x264 x265`.
 - **Filesystem:** `exfatprogs ntfs-3g btrfs-progs cifs-utils dosfstools smartmontools logrotate tcpdump`.
+- **Gaming/overlay:** `mangohud` (binary `lazydocker` diunduh dari GitHub oleh `setup_lazydocker`).
 - **Secrets/auth:** `gnome-keyring` (+ enable user service).
 
 **Setup:**
 - `setup_flatpak` — Flathub remote + OBS Studio (Flatpak).
-- `setup_nerd_fonts` — unduh **JetBrainsMono + FiraCode Nerd Fonts** ke `~/.local/share/fonts` (Fedora tidak punya paket nerd-font).
+- `setup_nerd_fonts` — unduh **JetBrainsMono + FiraCode + ComicShannsMono Nerd Fonts** ke `~/.local/share/fonts` (Fedora tidak punya paket nerd-font).
 - `apply_icon_settings` — gsettings: icon `Tela-nord-dark`, cursor `Bibata-Modern-Ice`.
 - `set_foot_default` — `xdg-mime default foot.desktop` terminal.
 - `install_nvidia` — bila detect NVIDIA: `akmod-nvidia` + `xorg-x11-drv-nvidia`, lalu `akmods --force`.
 - `setup_zsh` — Oh My Zsh + Powerlevel10k + plugin, salin `.zshrc`/`.p10k.zsh`, `chsh` ke zsh.
 - `setup_mise` / `setup_opencode` — Curl installer resmi.
+- `setup_tmux` — salin `tmux.conf` → `~/.tmux.conf`.
+- `setup_php` — terapkan `php.ini` ke `/etc/php.ini` (modul aktif via `/etc/php.d`).
+- `setup_nordic_theme` — clone Nordic theme ke `~/.themes/Nordic`.
+- `setup_ms_fonts` — MS Core Fonts via cabextract (opsional).
 - `copy_dotfiles` — salin whitelist config + `clean.sh`.
-- `copy_wallpapers` → `~/Pictures/Wallpapers/`; `copy_project_dirs` → `~/Projects/`; `fix_audio` (ASUS, inline amixer).
+- `copy_wallpapers` → `~/Pictures/Wallpapers/`; `copy_project_dirs` → `~/Projects/` (docker-db); `fix_audio` → jalankan `fix-audio.sh` (ASUS ALC256).
 
 ### `hyprland-noctalia.sh` (sejajar `hyprland-noctalia.sh` CachyOS)
 
-**Paket:** `hyprland` (stabil resmi Fedora) `rofi-wayland` `cliphist` `xdg-desktop-portal-hyprland` `hyprpicker` + `sddm` `switcheroo-control` + NVIDIA (`akmod-nvidia xorg-x11-drv-nvidia`, bila belum ada) + **`noctalia-git`** (COPR `lionheartp/Hyprland`) + `gnome-keyring`.
+**Paket:** `hyprland` (stabil resmi Fedora) `rofi` (2.0 sudah Wayland-native — tidak perlu `rofi-wayland`) `cliphist` `xdg-desktop-portal-hyprland` `hyprpicker` + `sddm` `switcheroo-control` + NVIDIA (`akmod-nvidia xorg-x11-drv-nvidia`, bila belum ada) + **`noctalia-git`** (COPR `lionheartp/Hyprland`) + `gnome-keyring` + `nautilus`.
 
 **Setup:**
 - Enable `switcheroo-control`, enable `sddm`, enable `gnome-keyring` user service.
@@ -83,7 +88,7 @@ NVIDIA sengaja disimpan di `install.sh` (dijalankan setelah reboot ke kernel pil
 - Polkit fix `/etc/polkit-1/rules.d/49-networkmanager.rules` — bypass prompt NetworkManager (fix crash D-Bus Noctalia WiFi, issue #3013).
 - Copy dotfiles `hypr/rofi/xdg-desktop-portal/fastfetch/MangoHud/nvim` + noctalia state ke `~/.local/state/noctalia/`.
 
-> Adaptasi vs CachyOS: `rofi`→`rofi-wayland` (Wayland), `nvidia-utils`→`akmod-nvidia`+`xorg-x11-drv-nvidia`, `noctalia`→`noctalia-git` (hanya ada di COPR).
+> Adaptasi vs CachyOS: Fedora `rofi` 2.0 sudah Wayland-native (tidak perlu `rofi-wayland`), `nvidia-utils`→`akmod-nvidia`+`xorg-x11-drv-nvidia`, `noctalia`→`noctalia-git` (hanya ada di COPR).
 
 ### `budgie-clean.sh` (opsional)
 
@@ -113,7 +118,8 @@ hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
-hl.env("LIBVA_DRIVER_NAME", "nvidia")
+hl.env("XCURSOR_SIZE", "24")
+hl.env("LIBVA_DRIVER_NAME", "radeonsi")
 hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 ```
 
@@ -186,9 +192,10 @@ MangoHud config: `position=top-center`, `gpu_stats cpu_stats ram fps frame_timin
 | `fastfetch/` | `hyprland-noctalia.sh` | Omarchy layout |
 | `MangoHud/` | `hyprland-noctalia.sh` | Gaming overlay config |
 | `nvim/` | `hyprland-noctalia.sh` | AstroNvim |
+| `noctalia/` | `hyprland-noctalia.sh` | `settings.toml` + sounds → `~/.local/state/noctalia/` |
 | `foot/` | `install.sh` | ComicShannsMono Nerd Font |
 | `fontconfig/` | `install.sh` | Monospace→Comic font mapping |
-| `git/` | `install.sh` | Aliases, pull.rebase, ddtu |
+| `git/` | `install.sh` | Alias, `pull.rebase`, `autoSetupRemote` |
 | `imv/` | `install.sh` | Omarchy keybinds |
 | `gtk-3.0/`,`gtk-4.0/` | `install.sh` | Nordic, Tela, Bibata |
 | `qt5ct/`,`qt6ct/` | `install.sh` | Fusion + Noctalia palette + Tela icons |
@@ -197,13 +204,12 @@ MangoHud config: `position=top-center`, `gpu_stats cpu_stats ram fps frame_timin
 | `environment.d/` | `install.sh` | Env vars |
 | `yazi/`,`zed/` | `install.sh` | Terminal FM / editor |
 | `zsh/` | `install.sh` | `.zshrc` + `.p10k.zsh` |
-| `environment.d/` | `install.sh` | Env vars |
-| `noctalia/` | `hyprland-noctalia.sh` | `settings.toml` + sounds → `~/.local/state/noctalia/` |
+| `tmux/` | `install.sh` (`setup_tmux`) | `tmux.conf` → `~/.tmux.conf` |
+| `php/` | `install.sh` (`setup_php`) | `php.ini` → `/etc/php.ini` (modul via `/etc/php.d`) |
 | `clean/` | `install.sh` | `clean.sh` maintenance |
+| `nautilus/` | *(manual)* | Script Nautilus "Open Terminal Here" → `~/.local/share/nautilus/scripts/` |
 | `docker-db/` | `install.sh` | MariaDB/postgres docker-compose |
-| `DaVinci_Resolve/` | `install.sh` | Notes → `~/Projects/` |
 | `Wallpapers/` | `install.sh` | → `~/Pictures/Wallpapers/` |
-| `tmux/` | *(belum dicop oleh script)* | config tmux (klon manual) |
 
 ---
 
