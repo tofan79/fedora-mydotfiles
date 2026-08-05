@@ -25,13 +25,13 @@
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 > 🚧 Screenshot & video showcase segera hadir.
 
 ---
 
-## ✨ Highlight
+## Highlight
 
 | | |
 |---|---|
@@ -45,7 +45,7 @@
 
 ---
 
-## 📋 Daftar Isi
+## Daftar Isi
 
 - [Installer — Fresh OS](#installer--fresh-os)
 - [Scripts](#scripts)
@@ -63,7 +63,7 @@
 
 ---
 
-## 💿 Installer — Fresh OS
+## Installer — Fresh OS
 
 > Untuk Fedora 44+ (disarankan install netinstall Everything). Jalanin step by step.
 
@@ -150,7 +150,7 @@ NVIDIA sengaja disimpan di `install.sh` (dijalankan setelah reboot ke kernel pil
 
 ---
 
-## 📜 Scripts
+## Scripts
 
 | Script | Fungsi |
 |--------|--------|
@@ -163,7 +163,7 @@ NVIDIA sengaja disimpan di `install.sh` (dijalankan setelah reboot ke kernel pil
 
 ---
 
-## ⚙️ Hyprland Config
+## Hyprland Config
 
 **Entry:** `~/.config/hypr/hyprland.lua`
 
@@ -191,7 +191,7 @@ require("keybinds") require("rules") require("layouts") require("gestures") requ
 
 ---
 
-## ⌨️ Keybindings
+## Keybindings
 
 Semua pakai `SUPER` (Windows key). Lihat di layar: `SUPER + SHIFT + K`
 
@@ -256,7 +256,7 @@ Semua pakai `SUPER` (Windows key). Lihat di layar: `SUPER + SHIFT + K`
 
 ---
 
-## 🎨 Presets
+## Presets
 
 Ganti gaya window tanpa reload — pake Rofi.
 
@@ -283,7 +283,7 @@ Ganti gaya window tanpa reload — pake Rofi.
 
 ---
 
-## 🎮 Gaming
+## Gaming
 
 ### game-launch.sh
 Launch option Steam `~/.config/hypr/scripts/game-launch.sh %command%`
@@ -304,7 +304,7 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 
 ---
 
-## 🎯 Theme Stack
+## Theme Stack
 
 | Layer | Tema |
 |-------|------|
@@ -319,7 +319,7 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 
 ---
 
-## 📦 Dotfiles Reference
+## Dotfiles Reference
 
 | Folder | Di-copy oleh | Isi |
 |--------|--------------|-----|
@@ -351,7 +351,7 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 
 ---
 
-## 🧼 Maintenance
+## Maintenance
 
 ```bash
 ~/.config/clean/clean.sh
@@ -361,7 +361,7 @@ Bersihin: cache DNF · orphans · Flatpak · cache browser (Zen/Brave/Chromium) 
 
 ---
 
-## ⚙️ NVIDIA
+## NVIDIA
 
 Hybrid graphics (ASUS TUF A15):
 - **Default:** AMD Renoir iGPU (desktop + VA-API `radeonsi`).
@@ -386,7 +386,7 @@ NVPRESENT_ENABLE_SMOOTH_MOTION=1
 
 ---
 
-## 📝 Notes
+## Notes
 
 - **Nama session:** "Hyprland (Noctalia)" di display manager manapun.
 - **Runtime config:** `hyprctl eval "hl.config({...})"` — cara yang benar di Hyprland Lua API.
@@ -397,7 +397,7 @@ NVPRESENT_ENABLE_SMOOTH_MOTION=1
 
 ---
 
-## 🙏 Credits
+## Credits
 
 | Project | Sumber |
 |---------|--------|
@@ -408,6 +408,6 @@ NVPRESENT_ENABLE_SMOOTH_MOTION=1
 
 ---
 
-## 📄 Lisensi
+## Lisensi
 
 [MIT](LICENSE) © 2026 tofan79

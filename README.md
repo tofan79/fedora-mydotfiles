@@ -25,13 +25,13 @@
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 > 🚧 Screenshots & showcase video coming soon.
 
 ---
 
-## ✨ Highlights
+## Highlights
 
 | | |
 |---|---|
@@ -45,7 +45,7 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Installer — Fresh OS](#installer--fresh-os)
 - [Scripts](#scripts)
@@ -63,7 +63,7 @@
 
 ---
 
-## 💿 Installer — Fresh OS
+## Installer — Fresh OS
 
 > For Fedora 44+ (Everything netinstall recommended). Run step by step.
 
@@ -150,7 +150,7 @@ NVIDIA is deliberately kept in `install.sh` (run after rebooting into the chosen
 
 ---
 
-## 📜 Scripts
+## Scripts
 
 | Script | Function |
 |--------|----------|
@@ -163,7 +163,7 @@ NVIDIA is deliberately kept in `install.sh` (run after rebooting into the chosen
 
 ---
 
-## ⚙️ Hyprland Config
+## Hyprland Config
 
 **Entry:** `~/.config/hypr/hyprland.lua`
 
@@ -191,7 +191,7 @@ require("keybinds") require("rules") require("layouts") require("gestures") requ
 
 ---
 
-## ⌨️ Keybindings
+## Keybindings
 
 All use `SUPER` (Windows key). View on screen: `SUPER + SHIFT + K`
 
@@ -256,7 +256,7 @@ All use `SUPER` (Windows key). View on screen: `SUPER + SHIFT + K`
 
 ---
 
-## 🎨 Presets
+## Presets
 
 Switch window styles without reloading — via Rofi.
 
@@ -283,7 +283,7 @@ Switch window styles without reloading — via Rofi.
 
 ---
 
-## 🎮 Gaming
+## Gaming
 
 ### game-launch.sh
 Steam launch option `~/.config/hypr/scripts/game-launch.sh %command%`
@@ -304,7 +304,7 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 
 ---
 
-## 🎯 Theme Stack
+## Theme Stack
 
 | Layer | Theme |
 |-------|-------|
@@ -319,7 +319,7 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 
 ---
 
-## 📦 Dotfiles Reference
+## Dotfiles Reference
 
 | Folder | Copied by | Contents |
 |--------|-----------|----------|
@@ -351,7 +351,7 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 
 ---
 
-## 🧼 Maintenance
+## Maintenance
 
 ```bash
 ~/.config/clean/clean.sh
@@ -361,7 +361,7 @@ Cleans: DNF cache · orphans · Flatpak · browser caches (Zen/Brave/Chromium) �
 
 ---
 
-## ⚙️ NVIDIA
+## NVIDIA
 
 Hybrid graphics (ASUS TUF A15):
 - **Default:** AMD Renoir iGPU (desktop + VA-API `radeonsi`).
@@ -386,7 +386,7 @@ NVPRESENT_ENABLE_SMOOTH_MOTION=1
 
 ---
 
-## 📝 Notes
+## Notes
 
 - **Session name:** "Hyprland (Noctalia)" in any display manager.
 - **Runtime config:** `hyprctl eval "hl.config({...})"` — the correct way in the Hyprland Lua API.
@@ -397,7 +397,7 @@ NVPRESENT_ENABLE_SMOOTH_MOTION=1
 
 ---
 
-## 🙏 Credits
+## Credits
 
 | Project | Source |
 |---------|--------|
@@ -408,6 +408,6 @@ NVPRESENT_ENABLE_SMOOTH_MOTION=1
 
 ---
 
-## 📄 License
+## License
 
 [MIT](LICENSE) © 2026 tofan79
