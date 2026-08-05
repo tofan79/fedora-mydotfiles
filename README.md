@@ -29,7 +29,7 @@ chmod +x *.sh
 | 1 | `./kernel.sh` | Menu kernel optimasi: 1) CachyOS bundle (LTO+addons+SCX), 2) `kernel-p03` (opsional), 3) rollback stock, 4) list. NVIDIA **tidak** di sini |
 | 2 | **REBOOT** → pilih kernel pilihan di GRUB (Advanced options) |
 | 3 | `./install.sh` | Paket inti: toolchain, CLI, fonts, tema, codecs, `akmod-nvidia`, zsh+OMZ+P10k, mise, opencode, dotfiles, wallpaper. **Setelah reboot** (biar NVIDIA di-build utk kernel aktif) |
-| 4 | `./hyprland-noctalia.sh` | Hyprland + Noctalia + rofi + cliphist + portal + switcheroo + SDDM + polkit fix |
+| 4 | `./hyprland-noctalia.sh` | Hyprland + Noctalia + rofi + cliphist + portal + switcheroo + SDDM |
 | 5 | `./budgie-clean.sh` | **Opsional** — bersihkan Budgie DE (jika install dari spin Budgie) |
 
 Urutan logis: `repo.sh` → reboot (jika ganti kernel) → `install.sh` → `hyprland-noctalia.sh`.
@@ -58,7 +58,7 @@ Menu pilihan kernel untuk Ryzen 7 4800H:
 
 NVIDIA sengaja disimpan di `install.sh` (dijalankan setelah reboot ke kernel pilihan), supaya `akmods` build modul untuk kernel yang sedang berjalan. Saat ganti kernel, `rebuild_akmods()` di script ini ikut rebuild modul.
 
-### `install.sh` (setara daftar paket CachyOS — dikonversi ke dnf)
+### `install.sh` (gabungan `install.sh` + `apps.sh` CachyOS — dikonversi ke dnf)
 
 **Paket inti:**
 - **Dev:** group `@development-tools`.
@@ -92,7 +92,6 @@ NVIDIA sengaja disimpan di `install.sh` (dijalankan setelah reboot ke kernel pil
 **Setup:**
 - Enable `switcheroo-control`, enable `sddm`, enable `gnome-keyring` user service.
 - Session file `/usr/share/wayland-sessions/hyprland.desktop` → "Hyprland (Noctalia)".
-- Polkit fix `/etc/polkit-1/rules.d/49-networkmanager.rules` — bypass prompt NetworkManager (fix crash D-Bus Noctalia WiFi, issue #3013).
 - Copy dotfiles `hypr/rofi/xdg-desktop-portal/fastfetch/MangoHud/nvim` + noctalia state ke `~/.local/state/noctalia/`.
 
 > Adaptasi vs CachyOS: Fedora `rofi` 2.0 sudah Wayland-native (tidak perlu `rofi-wayland`), `nvidia-utils`→`akmod-nvidia`+`xorg-x11-drv-nvidia`, `noctalia`→`noctalia-git` (hanya ada di COPR).

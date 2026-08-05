@@ -112,36 +112,6 @@ EOF
     log_ok "Session file dibuat (hyprland.desktop)."
 }
 
-setup_polkit_fix() {
-    local rules_file="/etc/polkit-1/rules.d/49-networkmanager.rules"
-    if [[ -f "$rules_file" ]]; then
-        log_ok "Polkit rules sudah ada."; return 0
-    fi
-    sudo mkdir -p /etc/polkit-1/rules.d
-    sudo tee "$rules_file" > /dev/null << 'POLKIT'
-polkit.addRule(function(action, subject) {
-	var allowed_actions = [
-		"org.freedesktop.NetworkManager.enable-disable-network",
-		"org.freedesktop.NetworkManager.enable-disable-wifi",
-		"org.freedesktop.NetworkManager.enable-disable-wimax",
-		"org.freedesktop.NetworkManager.enable-disable-wwan",
-		"org.freedesktop.NetworkManager.network-control",
-		"org.freedesktop.NetworkManager.settings.modify.own",
-		"org.freedesktop.NetworkManager.settings.modify.system",
-		"org.freedesktop.NetworkManager.wifi.scan",
-		"org.freedesktop.NetworkManager.wifi.share.open",
-		"org.freedesktop.NetworkManager.wifi.share.protected"
-	]
-	if (allowed_actions.indexOf(action.id) >= 0) {
-		if (subject.isInGroup("wheel")) {
-			return polkit.Result.YES;
-		}
-	}
-})
-POLKIT
-    log_ok "Polkit rules ditambahkan."
-}
-
 copy_dotfiles() {
     local -A config_map=(
         ["hypr"]=".config/hypr"
@@ -175,7 +145,6 @@ main() {
     enable_sddm
     setup_gnome_keyring
     setup_session_file
-    setup_polkit_fix
     copy_dotfiles
     echo ""
     log_ok "Hyprland + Noctalia setup selesai. Log: ${LOG_FILE}"

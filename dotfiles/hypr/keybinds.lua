@@ -196,15 +196,13 @@ hl.bind("CTRL + SHIFT + right", hl.dsp.window.move({ x = 50, y = 0, relative = t
 hl.bind(M .. " + Return", hl.dsp.exec_cmd("foot"), { description = "Terminal" })
 hl.bind(M .. " + E", hl.dsp.exec_cmd("nautilus"), { description = "File manager" })
 hl.bind(M .. " + B", hl.dsp.exec_cmd("zen-browser"), { description = "Browser (Zen)" })
-hl.bind(M .. " + N", hl.dsp.exec_cmd("zeditor"), { description = "Editor (Zed)" })
+hl.bind(M .. " + N", hl.dsp.exec_cmd("zed"), { description = "Editor (Zed)" })
 hl.bind(M .. " + L", hl.dsp.exec_cmd("localsend"), { description = "LocalSend" })
 hl.bind(M .. " + T", hl.dsp.exec_cmd("Telegram"), { description = "Telegram" })
 hl.bind(M .. " + W", hl.dsp.exec_cmd("io.github.tobagin.karere"), { description = "Karere" })
 hl.bind(M .. " + D", hl.dsp.exec_cmd("vesktop"), { description = "Vesktop (Discord)" })
 hl.bind(M .. " + G", hl.dsp.exec_cmd("steam"), { description = "Steam" })
-hl.bind(M .. " + A", hl.dsp.exec_cmd("/opt/AionUi/AionUi"), { description = "AionUI" })
 hl.bind(M .. " + U", hl.dsp.exec_cmd("/opt/abdownloadmanager/bin/ABDownloadManager"), { description = "AB Download Manager" })
-hl.bind(M .. " + P", hl.dsp.exec_cmd("protonplus"), { description = "ProtonPlus" })
 
 -- ───────────────────────────────────────────
 -- Mouse Bindings

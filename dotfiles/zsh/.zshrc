@@ -39,8 +39,17 @@ alias di='docker images'
 alias dex='docker exec -it'
 alias dlog='docker logs -f'
 # ---- Fedora ----
-alias update='sudo dnf upgrade --refresh && mise self-update && mise upgrade'
-alias upai='opencode upgrade && mimo upgrade && kiro-cli update && npm update -g @google/gemini-cli'
+alias update='sudo dnf upgrade --refresh && flatpak update -y'
+function uptools() {
+  mise self-update && mise upgrade
+  nub upgrade && nub node install latest
+  local latest=$(nub node ls | tail -1)
+  nub node ls | grep -v "$latest" | xargs -r nub node uninstall
+  composer self-update && composer global update
+  npm update -g
+  uv self update
+  opencode upgrade
+}
 alias install='sudo dnf install'
 alias remove='sudo dnf remove'
 alias search='dnf search'
@@ -51,22 +60,8 @@ alias psmem='ps auxf | sort -nr -k 4'
 alias psmem10='ps auxf | sort -nr -k 4 | head -10'
 alias grep='grep --color=auto'
 alias hw='hwinfo --short'
-# ---- EasyEffects ----
-alias ee='easyeffects --gapplication-service &'
-alias effect='python -m projectpulsewire start'
 # ---- `i` = mise install + use global ----
 alias ims='mise use -g'
-# ---- Resolve convert ----
-alias convert-resolve='resolve_convert.sh -q hq'
-alias backup-resolve='resolve_backup.sh --output-dir ~/Backups'
-restore-resolve() {
-  local backup="${1:-$(ls -t ~/Backups/resolve_backup_*.tar.gz 2>/dev/null | head -1)}"
-  if [[ -z "$backup" ]]; then
-    echo "Gak ada backup di ~/Backups/"
-    return 1
-  fi
-  resolve_backup.sh --restore "$backup"
-}
 
 # ---- Zoxide ----
 if command -v zoxide &>/dev/null; then
@@ -87,12 +82,17 @@ export PATH="$HOME/.opencode/bin:$PATH"
 # ---- Composer global ----
 export PATH="$PATH:$HOME/.config/composer/vendor/bin"
 
-# mimocode
-export PATH=/home/mindset/.mimocode/bin:$PATH
-alias upskill="npx skills update"
-
 # ---- Zsh plugins (autosuggestions, syntax-highlighting, completions) ----
 source ~/.oh-my-zsh/custom/plugins/zsh-completions/zsh-completions.plugin.zsh
 autoload -Uz compinit && compinit
 source ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions/zsh-autosuggestions.plugin.zsh
 source ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.plugin.zsh
+
+# nub
+export PATH="$HOME/.nub/bin:$PATH"
+
+# nub node shim
+export PATH="$HOME/.nub/node-shim:$PATH"
+
+# nub shims
+export PATH="$HOME/.nub/shims:$PATH"
