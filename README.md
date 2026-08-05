@@ -1,6 +1,13 @@
 # Fedora My Dotfiles
 
+> **Sumber:** dotfiles ini diadaptasi dari **https://github.com/tofan79/cachyos-mydotfiles** (versi CachyOS/Arch) dan dikonversi untuk Fedora.
+
 Setup Fedora untuk **ASUS TUF Gaming A15 FA506ICB** — AMD Renoir (iGPU) + NVIDIA RTX 3050 (dGPU), Hyprland + Noctalia.
+
+**Base system yang dipakai:**
+- **Fedora Everything** (netinstall)
+- Base environment: **Fedora custom operating system**
+- Additional software: **Standard + Budgie** (tanpa aplikasi desktop Budgie) — DE Budgie dibersihkan oleh `budgie-clean.sh`
 
 Keputusan utama (berbeda dari versi CachyOS/Arch yang asal):
 - **Migrasi** dari Arch/AUR ke **Fedora (tradisional)**, pakai `dnf` + RPM Fusion + COPR, bukan `pacman`.
