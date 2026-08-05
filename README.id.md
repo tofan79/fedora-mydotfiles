@@ -80,12 +80,23 @@ chmod +x *.sh
 
 | Step | Script | Fungsi |
 |------|--------|--------|
-| 0 | `./repo.sh` | **DNF + repositori** — mirror, RPM Fusion, COPR, Flathub. Jalanin pertama |
-| 1 | `./kernel.sh` | **Menu kernel** — CachyOS bundle (LTO), `kernel-p03`, atau stock |
-| 2 | **REBOOT** | Pilih kernel pilihan di GRUB (Advanced options) |
+| 0 | `./repo.sh` ⚠️ **OPSIONAL** | **DNF + repositori** — mirror, RPM Fusion, COPR, Flathub. Lihat catatan di bawah |
+| 1 | `./kernel.sh` (opsional) | **Menu kernel** — CachyOS bundle (LTO), `kernel-p03`, atau stock |
+| 2 | **REBOOT** *(hanya jika ganti kernel)* | Pilih kernel pilihan di GRUB (Advanced options) |
 | 3 | `./install.sh` | **Core OS** — toolchain, CLI, fonts, tema, codecs, `akmod-nvidia`, Zsh, mise, opencode, dotfiles |
 | 4 | `./hyprland-noctalia.sh` | **Desktop WM** — Hyprland, Noctalia, SDDM, rofi, switcheroo |
 | 5 | `./budgie-clean.sh` (opsional) | **Hapus Budgie DE** kalau install dari spin Budgie |
+
+> ⚠️ **`repo.sh` itu OPSIONAL.** Repo bawaan Fedora sudah jalan normal — `repo.sh` utamanya untuk **mirror luar negeri khusus Indonesia** (ISP lokal → server luar lemot). Yang **wajib** (kalau di-skip, enable manual):
+>
+> - **RPM Fusion nonfree** → untuk `akmod-nvidia` (Step 3):
+>   `sudo dnf install -y https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm`
+> - **COPR `lionheartp/Hyprland`** → untuk `noctalia-git` (Step 4):
+>   `sudo dnf copr enable lionheartp/Hyprland`
+> - **COPR `mindset/Mindset-Apps`** *(opsional)* → aplikasi custom:
+>   `sudo dnf copr enable mindset/Mindset-Apps`
+> - **Flathub** *(opsional)* → aplikasi Flatpak:
+>   `flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo`
 
 <details>
 <summary><b>Detail step</b></summary>

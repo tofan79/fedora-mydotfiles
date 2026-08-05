@@ -80,12 +80,23 @@ chmod +x *.sh
 
 | Step | Script | What It Does |
 |------|--------|-------------|
-| 0 | `./repo.sh` | **DNF + repos** — mirrors, RPM Fusion, COPR, Flathub. Run first |
-| 1 | `./kernel.sh` | **Kernel menu** — CachyOS bundle (LTO), `kernel-p03`, or stock |
-| 2 | **REBOOT** | Pick the chosen kernel in GRUB (Advanced options) |
+| 0 | `./repo.sh` ⚠️ **OPTIONAL** | **DNF + repos** — mirrors, RPM Fusion, COPR, Flathub. See note below |
+| 1 | `./kernel.sh` (optional) | **Kernel menu** — CachyOS bundle (LTO), `kernel-p03`, or stock |
+| 2 | **REBOOT** *(only if kernel changed)* | Pick the chosen kernel in GRUB (Advanced options) |
 | 3 | `./install.sh` | **Core OS** — toolchain, CLI, fonts, themes, codecs, `akmod-nvidia`, Zsh, mise, opencode, dotfiles |
 | 4 | `./hyprland-noctalia.sh` | **Desktop WM** — Hyprland, Noctalia, SDDM, rofi, switcheroo |
 | 5 | `./budgie-clean.sh` (optional) | **Remove Budgie DE** if installed from Budgie spin |
+
+> ⚠️ **`repo.sh` is OPTIONAL.** Fedora's stock repos work fine out of the box — `repo.sh` is mainly for **Indonesia-specific external mirrors** (local ISP → overseas servers are slow). What is **required** (if you skip it, enable these manually):
+>
+> - **RPM Fusion nonfree** → for `akmod-nvidia` (Step 3):
+>   `sudo dnf install -y https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm`
+> - **COPR `lionheartp/Hyprland`** → for `noctalia-git` (Step 4):
+>   `sudo dnf copr enable lionheartp/Hyprland`
+> - **COPR `mindset/Mindset-Apps`** *(optional)* → custom apps:
+>   `sudo dnf copr enable mindset/Mindset-Apps`
+> - **Flathub** *(optional)* → Flatpak apps:
+>   `flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo`
 
 <details>
 <summary><b>Step details</b></summary>
