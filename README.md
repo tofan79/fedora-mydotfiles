@@ -25,7 +25,7 @@ chmod +x *.sh
 
 | Step | Script | Apa yang dilakukan |
 |------|--------|--------------------|
-| 0 | `./repo.sh` | Konfigurasi DNF (mirror luar negeri, tanpa `defaultyes`), RPM Fusion free+nonfree, Terra, 2 COPR, Flathub. **Wajib pertama** |
+| 0 | `./repo.sh` | Konfigurasi DNF (mirror luar negeri, tanpa `defaultyes`), RPM Fusion free+nonfree, Terra, 2 COPR, Flathub. **Wajib pertama** — bagian mirror luar negeri **opsional khusus Indonesia** (biar `dnf` lancar, internet ID ke server lokal lemot); selain itu tetap penting (RPM Fusion/COPR/Flathub) |
 | 1 | `./kernel.sh` | Menu kernel optimasi: 1) CachyOS bundle (LTO+addons+SCX), 2) `kernel-p03` (opsional), 3) rollback stock, 4) list. NVIDIA **tidak** di sini |
 | 2 | **REBOOT** → pilih kernel pilihan di GRUB (Advanced options) |
 | 3 | `./install.sh` | Paket inti: toolchain, CLI, fonts, tema, codecs, `akmod-nvidia`, zsh+OMZ+P10k, mise, opencode, dotfiles, wallpaper. **Setelah reboot** (biar NVIDIA di-build utk kernel aktif) |
