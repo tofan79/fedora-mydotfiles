@@ -67,6 +67,14 @@ hl.window_rule({
     opaque = true,
 })
 
+hl.window_rule({
+    name   = "satty-float",
+    match  = { class = "^com\\.gabm\\.satty$" },
+    float  = true,
+    size   = { 900, 700 },
+    opaque = true,
+})
+
 -- Fix XWayland drag issues
 hl.window_rule({
     name     = "fix-xwayland-drags",
