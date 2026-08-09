@@ -26,6 +26,8 @@ hl.bind(M .. " + CTRL + comma", hl.dsp.exec_cmd("noctalia msg clipboard-clear"),
 hl.bind(M .. " + CTRL + C", hl.dsp.exec_cmd("noctalia msg caffeine-toggle"), { description = "Toggle caffeine" })
 hl.bind(M .. " + CTRL + slash", hl.dsp.exec_cmd("noctalia msg panel-toggle noctalia/wallhaven:browser"), { description = "Wallhaven wallpaper" })
 hl.bind(M .. " + CTRL + backslash", hl.dsp.exec_cmd("noctalia msg panel-toggle noctalia/mpvpaper:picker"), { description = "Video wallpaper" })
+hl.bind(M .. " + ALT + period", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all clearResult"), { description = "Clear screen-toolkit result" })
+hl.bind(M .. " + ALT + comma", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all clearHistory"), { description = "Clear screen-toolkit history" })
 hl.bind(M .. " + CTRL + P", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all colorPicker"), { description = "Color picker" })
 hl.bind(M .. " + ALT + A", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all ocr"), { description = "Extract text from area" })
 
