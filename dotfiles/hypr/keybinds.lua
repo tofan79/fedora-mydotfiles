@@ -194,7 +194,7 @@ hl.bind(M .. " + L", hl.dsp.exec_cmd("localsend"), { description = "LocalSend" }
 hl.bind(M .. " + T", hl.dsp.exec_cmd("Telegram"), { description = "Telegram" })
 hl.bind(M .. " + W", hl.dsp.exec_cmd("flatpak run io.github.tobagin.karere"), { description = "Karere" })
 hl.bind(M .. " + D", hl.dsp.exec_cmd("vesktop"), { description = "Vesktop (Discord)" })
-hl.bind(M .. " + G", hl.dsp.exec_cmd("~/.config/hypr/scripts/game-launch.sh steam"), { description = "Steam (gamemode)" })
+hl.bind(M .. " + G", hl.dsp.exec_cmd("steam"), { description = "Steam" })
 hl.bind(M .. " + U", hl.dsp.exec_cmd("/opt/ab-download-manager/ABDownloadManager/bin/ABDownloadManager"), { description = "AB Download Manager" })
 
 -- ───────────────────────────────────────────
