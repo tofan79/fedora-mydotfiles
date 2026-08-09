@@ -26,8 +26,9 @@ hl.bind(M .. " + CTRL + comma", hl.dsp.exec_cmd("noctalia msg clipboard-clear"),
 hl.bind(M .. " + CTRL + C", hl.dsp.exec_cmd("noctalia msg caffeine-toggle"), { description = "Toggle caffeine" })
 hl.bind(M .. " + CTRL + slash", hl.dsp.exec_cmd("noctalia msg panel-toggle noctalia/wallhaven:browser"), { description = "Wallhaven wallpaper" })
 hl.bind(M .. " + CTRL + backslash", hl.dsp.exec_cmd("noctalia msg panel-toggle noctalia/mpvpaper:picker"), { description = "Video wallpaper" })
-hl.bind(M .. " + CTRL + P", hl.dsp.exec_cmd("noctalia msg panel-toggle oldirtty/color_picker:panel"), { description = "Color picker" })
-hl.bind(M .. " + ALT + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/text-extractor.sh"), { description = "Extract text from area" })
+hl.bind(M .. " + P", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all toggle"), { description = "Screen tools panel" })
+hl.bind(M .. " + CTRL + P", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all colorPicker"), { description = "Color picker" })
+hl.bind(M .. " + ALT + A", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all ocr"), { description = "Extract text from area" })
 
 -- ───────────────────────────────────────────
 -- Window Focus (Super + Arrows)
@@ -131,8 +132,9 @@ hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("noctalia msg brightness-up"), { 
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("noctalia msg brightness-down"), { locked = true, repeating = true, description = "Brightness down" })
 hl.bind("XF86Sleep", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock-and-suspend.sh"), { description = "Lock then suspend" })
 hl.bind("XF86Calculator", hl.dsp.exec_cmd("gnome-calculator"), { locked = true, description = "Calculator" })
-hl.bind("Print", hl.dsp.exec_cmd("noctalia msg screenshot-region"), { locked = true, description = "Screenshot region" })
-hl.bind("CTRL + Print", hl.dsp.exec_cmd("noctalia msg screenshot-fullscreen"), { locked = true, description = "Screenshot fullscreen" })
+hl.bind("Print", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all annotate"), { locked = true, description = "Screenshot & annotate area" })
+hl.bind("CTRL + Print", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all annotateFullscreen"), { locked = true, description = "Screenshot & annotate fullscreen" })
+hl.bind(M .. " + Print", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all annotateWindow"), { locked = true, description = "Annotate focused window" })
 hl.bind(M .. " + ALT + E", hl.dsp.exec_cmd("wl-paste | satty -f -"), { locked = true, description = "Edit clipboard image in satty" })
 
 -- ───────────────────────────────────────────
