@@ -134,7 +134,7 @@ hl.bind("XF86Sleep", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock-and-suspend.sh
 hl.bind("XF86Calculator", hl.dsp.exec_cmd("gnome-calculator"), { locked = true, description = "Calculator" })
 hl.bind("Print", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all annotate"), { locked = true, description = "Screenshot & annotate area" })
 hl.bind("CTRL + Print", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all annotateFullscreen"), { locked = true, description = "Screenshot & annotate fullscreen" })
-hl.bind(M .. " + Print", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all annotateWindow"), { locked = true, description = "Annotate focused window" })
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all annotateWindow"), { locked = true, description = "Annotate focused window" })
 hl.bind(M .. " + ALT + E", hl.dsp.exec_cmd("wl-paste | satty -f -"), { locked = true, description = "Edit clipboard image in satty" })
 
 -- ───────────────────────────────────────────
