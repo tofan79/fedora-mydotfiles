@@ -17,6 +17,7 @@ hl.config({
             new_optimizations = true,
             ignore_opacity = true,
             xray = true,
+            -- variant = 2,   -- 0=kawase 1=frost 2=ripple 3=drops 4=water
         },
 
         shadow = {

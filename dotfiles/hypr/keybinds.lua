@@ -32,18 +32,18 @@ hl.bind(M .. " + ALT + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/text-extracto
 -- ───────────────────────────────────────────
 -- Window Focus (Super + Arrows)
 -- ───────────────────────────────────────────
-hl.bind(M .. " + left", hl.dsp.focus({ direction = "left" }), { description = "Move focus left" })
-hl.bind(M .. " + right", hl.dsp.focus({ direction = "right" }), { description = "Move focus right" })
-hl.bind(M .. " + up", hl.dsp.focus({ direction = "up" }), { description = "Move focus up" })
-hl.bind(M .. " + down", hl.dsp.focus({ direction = "down" }), { description = "Move focus down" })
+hl.bind(M .. " + left", hl.dsp.exec_cmd("~/.config/hypr/scripts/focus-dir.sh left"), { description = "Smart focus left" })
+hl.bind(M .. " + right", hl.dsp.exec_cmd("~/.config/hypr/scripts/focus-dir.sh right"), { description = "Smart focus right" })
+hl.bind(M .. " + up", hl.dsp.exec_cmd("~/.config/hypr/scripts/focus-dir.sh up"), { description = "Smart focus up" })
+hl.bind(M .. " + down", hl.dsp.exec_cmd("~/.config/hypr/scripts/focus-dir.sh down"), { description = "Smart focus down" })
 
 -- ───────────────────────────────────────────
 -- Window Swapping (Super + Shift + Arrows)
 -- ───────────────────────────────────────────
-hl.bind(M .. " + SHIFT + left", hl.dsp.window.swap({ direction = "l" }), { description = "Swap window left" })
-hl.bind(M .. " + SHIFT + right", hl.dsp.window.swap({ direction = "r" }), { description = "Swap window right" })
-hl.bind(M .. " + SHIFT + up", hl.dsp.window.swap({ direction = "u" }), { description = "Swap window up" })
-hl.bind(M .. " + SHIFT + down", hl.dsp.window.swap({ direction = "d" }), { description = "Swap window down" })
+hl.bind(M .. " + SHIFT + left", hl.dsp.exec_cmd("~/.config/hypr/scripts/swap-dir.sh left"), { description = "Smart swap left" })
+hl.bind(M .. " + SHIFT + right", hl.dsp.exec_cmd("~/.config/hypr/scripts/swap-dir.sh right"), { description = "Smart swap right" })
+hl.bind(M .. " + SHIFT + up", hl.dsp.exec_cmd("~/.config/hypr/scripts/swap-dir.sh up"), { description = "Smart swap up" })
+hl.bind(M .. " + SHIFT + down", hl.dsp.exec_cmd("~/.config/hypr/scripts/swap-dir.sh down"), { description = "Smart swap down" })
 
 -- Move to adjacent workspace
 hl.bind(M .. " + CTRL + up", hl.dsp.focus({ workspace = "e-1" }), { description = "Previous workspace" })
@@ -69,14 +69,8 @@ hl.bind(M .. " + ALT + T",
 hl.bind(M .. " + ALT + W", hl.dsp.exec_cmd("~/.config/hypr/scripts/switch-layouts.sh"),
     { description = "Switch layout (rofi picker)" })
 
--- scrolling
-hl.bind(M .. " + ALT + left", hl.dsp.layout("consume_or_expel prev"), { description = "(Scrolling) Consume/expel left" })
-hl.bind(M .. " + ALT + right", hl.dsp.layout("consume_or_expel next"), { description = "(Scrolling) Consume/expel right" })
-hl.bind(M .. " + ALT + up", hl.dsp.window.move({ workspace = "e-1" }), { description = "(Scrolling) Move window to previous workspace" })
-hl.bind(M .. " + ALT + down", hl.dsp.window.move({ workspace = "e+1" }), { description = "(Scrolling) Move window to next workspace" })
-hl.bind(M .. " + CTRL + left", hl.dsp.layout("focus l"), { description = "(Scrolling) Focus left" })
-hl.bind(M .. " + CTRL + right", hl.dsp.layout("focus r"), { description = "(Scrolling) Focus right" })
-
+-- Window Cycling
+hl.bind("ALT + Tab", hl.dsp.window.cycle_next({ tiled = true }), { description = "Cycle windows" })
 -- dwindle
 hl.bind(M .. " + CTRL + K", hl.dsp.layout("swapsplit"), { description = "(Dwindle) Swap split" })
 hl.bind(M .. " + CTRL + J", hl.dsp.layout("togglesplit"), { description = "(Dwindle) Toggle split" })
@@ -106,15 +100,13 @@ hl.bind(M .. " + SHIFT + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/toggle-anim
     { description = "Toggle animations" })
 hl.bind(M .. " + CTRL + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/switch-animations.sh"),
     { description = "Switch animation preset" })
+-- Toggle Boost Mode (semua dekorasi off saat main game)
+hl.bind(M .. " + SHIFT + B", hl.dsp.exec_cmd("~/.config/hypr/scripts/toggle-boost-mode.sh"),
+    { description = "Toggle Boost (dek off)" })
 hl.bind(M .. " + CTRL + D", hl.dsp.exec_cmd("~/.config/hypr/scripts/switch-decorations.sh"),
     { description = "Switch decoration preset" })
 hl.bind(M .. " + CTRL + S", hl.dsp.exec_cmd("~/.config/hypr/scripts/switch-windows.sh"),
     { description = "Switch window preset" })
-
--- ───────────────────────────────────────────
--- Window Cycling
--- ───────────────────────────────────────────
-hl.bind("ALT + Tab", hl.dsp.window.cycle_next({ tiled = true }), { description = "Cycle windows" })
 
 -- ───────────────────────────────────────────
 -- Scratchpad
@@ -141,7 +133,6 @@ hl.bind("XF86Sleep", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock-and-suspend.sh
 hl.bind("XF86Calculator", hl.dsp.exec_cmd("gnome-calculator"), { locked = true, description = "Calculator" })
 hl.bind("Print", hl.dsp.exec_cmd("noctalia msg screenshot-region"), { locked = true, description = "Screenshot region" })
 hl.bind("CTRL + Print", hl.dsp.exec_cmd("noctalia msg screenshot-fullscreen"), { locked = true, description = "Screenshot fullscreen" })
-
 hl.bind(M .. " + ALT + E", hl.dsp.exec_cmd("wl-paste | satty -f -"), { locked = true, description = "Edit clipboard image in satty" })
 
 -- ───────────────────────────────────────────
