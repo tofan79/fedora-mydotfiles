@@ -35,9 +35,9 @@
 
 | | |
 |---|---|
-| 🎨 **16 animation presets** | Switch with `SUPER + CTRL + A` |
-| 🪟 **14 window + 10 decoration presets** | Rofi switcher — no reload |
-| 🪟 **Layout picker** | Rofi selector — `SUPER + ALT + W` |
+| 🎨 **16 animation presets** | Switch with `SUPER + ALT + A` |
+| 🪟 **14 window + 10 decoration presets** | Noctalia panel — no reload |
+| 🪟 **Layout picker** | Noctalia panel — `SUPER + ALT + W` |
 | 🖼️ **Dynamic wallpaper** | Wallhaven + video wallpaper (mpvpaper) |
 | 🎮 **Gaming mode** | NVIDIA via `switcherooctl` + MangoHud |
 | 🧹 **One-command cleanup** | `clean.sh` — cache, orphans, temp |
@@ -84,7 +84,7 @@ chmod +x *.sh
 | 1 | `./kernel.sh` (optional) | **Kernel menu** — CachyOS bundle (LTO), `kernel-p03`, or stock |
 | 2 | **REBOOT** *(only if kernel changed)* | Pick the chosen kernel in GRUB (Advanced options) |
 | 3 | `./install.sh` | **Core OS** — toolchain, CLI, fonts, themes, codecs, `akmod-nvidia`, Zsh, mise, opencode, dotfiles |
-| 4 | `./hyprland-noctalia.sh` | **Desktop WM** — Hyprland, Noctalia, SDDM, rofi, switcheroo |
+| 4 | `./hyprland-noctalia.sh` | **Desktop WM** — Hyprland, Noctalia, SDDM, switcheroo |
 | 5 | `./budgie-clean.sh` (optional) | **Remove Budgie DE** if installed from Budgie spin |
 
 > ⚠️ **`repo.sh` is OPTIONAL.** Fedora's stock repos work fine out of the box — `repo.sh` is mainly for **Indonesia-specific external mirrors** (local ISP → overseas servers are slow). What is **required** (if you skip it, enable these manually):
@@ -138,13 +138,13 @@ NVIDIA is deliberately kept in `install.sh` (run after rebooting into the chosen
 
 ### Step 4: `hyprland-noctalia.sh`
 
-**Packages:** `hyprland rofi cliphist xdg-desktop-portal-hyprland hyprpicker nautilus sddm switcheroo-control` + `noctalia-git` (COPR `lionheartp/Hyprland`) + `gnome-keyring`
+**Packages:** `hyprland cliphist xdg-desktop-portal-hyprland hyprpicker nautilus sddm switcheroo-control` + `noctalia-git` (COPR `lionheartp/Hyprland`) + `gnome-keyring`
 
 **Does:** enable `switcheroo-control` · enable `sddm` · enable gnome-keyring · session file → **"Hyprland (Noctalia)"** · copy dotfiles
 
-**Copied:** `hypr/` · `rofi/` · `xdg-desktop-portal/` · `fastfetch/` · `MangoHud/` · `nvim/`
+**Copied:** `hypr/` · `xdg-desktop-portal/` · `fastfetch/` · `MangoHud/` · `nvim/`
 
-> Fedora `rofi` 2.0 is already Wayland-native (no `rofi-wayland` needed); NVIDIA uses `akmod-nvidia` instead of `nvidia-utils`.
+> NVIDIA uses `akmod-nvidia` instead of `nvidia-utils`.
 
 </details>
 
@@ -221,7 +221,7 @@ All use `SUPER` (Windows key). View on screen: `SUPER + SHIFT + K`
 | | `SUPER + ALT + T` | Float + pin |
 | **Scratchpad** | `SUPER + S` | Toggle special workspace |
 | | `SUPER + SHIFT + S` | Send to special |
-| **Layout** | `SUPER + ALT + W` | Switch layout (rofi picker) |
+| **Layout** | `SUPER + ALT + W` | Switch layout (Noctalia panel) |
 | | `SUPER + CTRL + K` / `J` | Swap split / toggle split |
 | | `SUPER + CTRL + M` | Master orientation |
 | **Groups** | `SUPER + SHIFT + G` | Toggle group |
@@ -258,7 +258,7 @@ All use `SUPER` (Windows key). View on screen: `SUPER + SHIFT + K`
 
 ## Presets
 
-Switch window styles without reloading — via Rofi.
+Switch window styles without reloading — via the Noctalia panel.
 
 ### Animations
 `SUPER + CTRL + A` — 16 presets
@@ -314,7 +314,6 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 | Qt5/Qt6 | Fusion + Noctalia palette |
 | Terminal | Foot + ComicShannsMono Nerd Font 10pt |
 | Shell | Zsh + Powerlevel10k (rainbow) |
-| Rofi | Noctalia · centered · rounded |
 | Wallpaper | BG03.png (wallhaven + mpvpaper supported) |
 
 ---
@@ -324,7 +323,7 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 | Folder | Copied by | Contents |
 |--------|-----------|----------|
 | `hypr/` | `hyprland-noctalia.sh` | Full Lua config + presets + scripts |
-| `rofi/` | `hyprland-noctalia.sh` | Noctalia theme |
+| `/` | `hyprland-noctalia.sh` | Noctalia theme |
 | `xdg-desktop-portal/` | `hyprland-noctalia.sh` | default=hyprland |
 | `fastfetch/` | `hyprland-noctalia.sh` | Omarchy layout |
 | `MangoHud/` | `hyprland-noctalia.sh` | Gaming overlay |

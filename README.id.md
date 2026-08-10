@@ -35,9 +35,9 @@
 
 | | |
 |---|---|
-| 🎨 **16 preset animasi** | Ganti dengan `SUPER + CTRL + A` |
-| 🪟 **14 window + 10 dekorasi preset** | Pake Rofi — tanpa reload |
-| 🪟 **Pilih layout** | Rofi selector — `SUPER + ALT + W` |
+| 🎨 **16 preset animasi** | Ganti dengan `SUPER + ALT  + A` |
+| 🪟 **14 window + 10 dekorasi preset** | Panel Noctalia — tanpa reload |
+| 🪟 **Pilih layout** | Panel Noctalia — `SUPER + ALT + W` |
 | 🖼️ **Wallpaper dinamis** | Wallhaven + video wallpaper (mpvpaper) |
 | 🎮 **Mode gaming** | NVIDIA via `switcherooctl` + MangoHud |
 | 🧹 **Bersihin 1 perintah** | `clean.sh` — cache, orphans, temp |
@@ -84,7 +84,7 @@ chmod +x *.sh
 | 1 | `./kernel.sh` (opsional) | **Menu kernel** — CachyOS bundle (LTO), `kernel-p03`, atau stock |
 | 2 | **REBOOT** *(hanya jika ganti kernel)* | Pilih kernel pilihan di GRUB (Advanced options) |
 | 3 | `./install.sh` | **Core OS** — toolchain, CLI, fonts, tema, codecs, `akmod-nvidia`, Zsh, mise, opencode, dotfiles |
-| 4 | `./hyprland-noctalia.sh` | **Desktop WM** — Hyprland, Noctalia, SDDM, rofi, switcheroo |
+| 4 | `./hyprland-noctalia.sh` | **Desktop WM** — Hyprland, Noctalia, SDDM, switcheroo |
 | 5 | `./budgie-clean.sh` (opsional) | **Hapus Budgie DE** kalau install dari spin Budgie |
 
 > ⚠️ **`repo.sh` itu OPSIONAL.** Repo bawaan Fedora sudah jalan normal — `repo.sh` utamanya untuk **mirror luar negeri khusus Indonesia** (ISP lokal → server luar lemot). Yang **wajib** (kalau di-skip, enable manual):
@@ -138,13 +138,13 @@ NVIDIA sengaja disimpan di `install.sh` (dijalankan setelah reboot ke kernel pil
 
 ### Step 4: `hyprland-noctalia.sh`
 
-**Paket:** `hyprland rofi cliphist xdg-desktop-portal-hyprland hyprpicker nautilus sddm switcheroo-control` + `noctalia-git` (COPR `lionheartp/Hyprland`) + `gnome-keyring`
+**Paket:** `hyprland cliphist xdg-desktop-portal-hyprland hyprpicker nautilus sddm switcheroo-control` + `noctalia-git` (COPR `lionheartp/Hyprland`) + `gnome-keyring`
 
 **Ngapain:** enable `switcheroo-control` · enable `sddm` · enable gnome-keyring · session file → **"Hyprland (Noctalia)"** · copy dotfiles
 
-**Di-copy:** `hypr/` · `rofi/` · `xdg-desktop-portal/` · `fastfetch/` · `MangoHud/` · `nvim/`
+**Di-copy:** `hypr/` · `xdg-desktop-portal/` · `fastfetch/` · `MangoHud/` · `nvim/`
 
-> `rofi` 2.0 di Fedora sudah Wayland-native (tidak perlu `rofi-wayland`); NVIDIA pakai `akmod-nvidia`, bukan `nvidia-utils`.
+> NVIDIA pakai `akmod-nvidia`, bukan `nvidia-utils`.
 
 </details>
 
@@ -221,7 +221,7 @@ Semua pakai `SUPER` (Windows key). Lihat di layar: `SUPER + SHIFT + K`
 | | `SUPER + ALT + T` | Float + pin |
 | **Scratchpad** | `SUPER + S` | Toggle special workspace |
 | | `SUPER + SHIFT + S` | Kirim ke special |
-| **Layout** | `SUPER + ALT + W` | Ganti layout (rofi picker) |
+| **Layout** | `SUPER + ALT + W` | Ganti layout ( picker) |
 | | `SUPER + CTRL + K` / `J` | Swap split / toggle split |
 | | `SUPER + CTRL + M` | Orientasi master |
 | **Groups** | `SUPER + SHIFT + G` | Toggle group |
@@ -258,7 +258,7 @@ Semua pakai `SUPER` (Windows key). Lihat di layar: `SUPER + SHIFT + K`
 
 ## Presets
 
-Ganti gaya window tanpa reload — pake Rofi.
+Ganti gaya window tanpa reload — pake .
 
 ### Animasi
 `SUPER + CTRL + A` — 16 preset
@@ -314,7 +314,6 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 | Qt5/Qt6 | Fusion + palet Noctalia |
 | Terminal | Foot + ComicShannsMono Nerd Font 10pt |
 | Shell | Zsh + Powerlevel10k (rainbow) |
-| Rofi | Noctalia · centered · rounded |
 | Wallpaper | BG03.png (wallhaven + mpvpaper didukung) |
 
 ---
@@ -324,7 +323,7 @@ gpu_stats gpu_temp gpu_name  cpu_stats cpu_temp  ram fps frame_timing
 | Folder | Di-copy oleh | Isi |
 |--------|--------------|-----|
 | `hypr/` | `hyprland-noctalia.sh` | Full config Lua + presets + scripts |
-| `rofi/` | `hyprland-noctalia.sh` | Noctalia theme |
+| `/` | `hyprland-noctalia.sh` | Noctalia theme |
 | `xdg-desktop-portal/` | `hyprland-noctalia.sh` | default=hyprland |
 | `fastfetch/` | `hyprland-noctalia.sh` | Omarchy layout |
 | `MangoHud/` | `hyprland-noctalia.sh` | Gaming overlay |

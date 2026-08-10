@@ -20,9 +20,11 @@ order = [ "Mindset" ]
         "clipboard",
         "todo",
         "notes",
-        "screenshot",
-        "recorder",
+        "gamermode",
+        "widget",
+        "toggle",
         "bluetooth",
+        "toggle_2",
         "network",
         "volume",
         "battery",
@@ -32,7 +34,7 @@ order = [ "Mindset" ]
     font_weight = 400
     margin_ends = 25
     radius = 50
-    start = [ "launcher", "clock", "cpu", "temp", "ram", "summary", "privacy" ]
+    start = [ "launcher", "clock", "cpu", "temp", "ram", "privacy" ]
     thickness = 30
 
 [battery]
@@ -269,9 +271,34 @@ offset_y = 20
 position = "bottom_center"
 scale = 0.80000000447034836
 
+[plugin_settings."alexander/screen-toolkit"]
+gif-max-seconds = 60
+panel-full_open_near_click = true
+panel-full_position = "auto"
+panel-legacy_open_near_click = true
+panel-legacy_position = "auto"
+panel-mode = "legacy"
+panel_open_near_click = true
+panel_position = "auto"
+record-audio-in = true
+record-audio-out = true
+record-codec = "hevc"
+record-fps = 144
+result_open_near_click = true
+result_position = "auto"
+
 [plugin_settings."blackbartblues/audio-switcher"]
 audio-switcher_placement = "floating"
 audio-switcher_position = "auto"
+
+[plugin_settings."blackbartblues/keymap"]
+columns = 4
+
+[plugin_settings."cleboost/hotspot"]
+panel_placement = "floating"
+panel_position = "auto"
+password = "43211234"
+ssid = "Linux_User"
 
 [plugin_settings."gustav0ar/drive-health"]
 critical_temperature = 90
@@ -284,10 +311,21 @@ warning_temperature = 80
 max_chars = 40
 player_allowlist = []
 
-[plugin_settings."kenn/keybind-cheatsheet"]
-columns = 4
-show_actions = true
-show_undescribed = false
+[plugin_settings."mindset/gamer-mode"]
+main_open_near_click = true
+main_placement = "floating"
+
+[plugin_settings."mindset/hotspot"]
+panel_placement = "floating"
+panel_position = "auto"
+
+[plugin_settings."mindset/hypr-animations"]
+panel_open_near_click = true
+
+[plugin_settings."mindset/keybind-cheatsheet"]
+cheatsheet_position = "auto"
+compositor = "hyprland"
+hyprland_parser = "lua"
 
 [plugin_settings."nightwatch75/todo"]
 panel_placement = "floating"
@@ -312,30 +350,57 @@ panel_position = "top_center"
 
 [plugins]
 enabled = [
-    "noctalia/screen_recorder",
     "noctalia/translator",
     "noctalia/notes",
     "noctalia/wallhaven",
     "noctalia/kaomoji",
     "noctalia/mpvpaper",
-    "oldirtty/color_picker",
     "nightwatch75/todo",
     "nightwatch75/file-search",
     "cleboost/zed-provider",
-    "kenn/keybind-cheatsheet"
+    "cleboost/jetbrains-provider",
+    "dunarand/tmux-provider",
+    "cleboost/ssh-launcher",
+    "weinguyen/shell-command",
+    "alexander/screen-toolkit",
+    "mindset/hotspot",
+    "mindset/hypr-layouts",
+    "mindset/hypr-animations",
+    "mindset/hypr-decorations",
+    "mindset/hypr-windows",
+    "mindset/keybind-cheatsheet",
+    "mindset/gamer-mode"
 ]
+
+    [[plugins.source]]
+    kind = "git"
+    location = "https://github.com/noctalia-dev/official-plugins"
+    name = "official"
+
+    [[plugins.source]]
+    kind = "git"
+    location = "https://github.com/noctalia-dev/community-plugins"
+    name = "community"
+
+    [[plugins.source]]
+    kind = "git"
+    location = "https://github.com/tofan79/mindset-noctalia-plugins"
+    name = "mindset"
 
 [shell]
 app_icon_color = "error"
-avatar_path = "/var/lib/AccountsService/icons/mindset"
+avatar_path = "/home/mindset/.local/state/noctalia/avatar/Sword Black.png"
 clipboard_image_action_command = "satty -f -"
+corner_radius_scale = 1.2500000186264515
 external_ip_enabled = true
 font_family = "Comic Sans MS"
 niri_overview_type_to_launch_enabled = true
+panel_anchor_bar = "Mindset"
 password_style = "random"
 polkit_agent = true
 screen_time_enabled = true
 settings_show_advanced = true
+settings_window_translucent = true
 
     [shell.launcher]
     session_search = true
@@ -344,6 +409,7 @@ settings_show_advanced = true
     [shell.panel]
     clipboard_position = "auto"
     control_center_placement = "floating"
+    floating_layer = "top"
     launcher_position = "auto"
     launcher_sort_by_usage = false
     open_near_click_clipboard = true
@@ -357,6 +423,9 @@ settings_show_advanced = true
 
     [shell.screenshot]
     confirm_region = true
+
+    [shell.session]
+    grid_columns = 1
 
 [system.monitor]
 cpu_temp_activity_threshold = 80
@@ -383,13 +452,14 @@ wallpaper_scheme = "m3-tonal-spot"
     builtin_ids = [ "btop", "cava", "foot", "gtk3", "gtk4", "hyprland", "kcolorscheme", "qt" ]
     community_ids = [
         "opencode",
-        "zen-browser",
         "telegram",
+        "inkscape",
+        "libreoffice",
         "neovim",
         "zed",
         "heroiclauncher",
         "steam",
-        "rofi",
+        "fastfetch",
         "obs",
         "hyprtoolkit",
         "papirus-icons",
@@ -407,37 +477,13 @@ transition_on_startup = true
     interval_seconds = 600
 
     [wallpaper.default]
-    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
+    path = "/home/mindset/Pictures/Wallpapers/37.png"
 
     [wallpaper.last]
-    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
+    path = "/home/mindset/Pictures/Wallpapers/37.png"
 
     [wallpaper.monitors.eDP-1]
-    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
-
-    [[wallpaper.favorite]]
-    palette_source = "wallpaper"
-    path = "/home/mindset/Pictures/Wallpapers/自由阶梯.JPG"
-    theme_mode = "dark"
-    wallpaper_scheme = "m3-tonal-spot"
-
-    [[wallpaper.favorite]]
-    palette_source = "wallpaper"
-    path = "/home/mindset/Pictures/Wallpapers/anders-jilden-cYrMQA7a3Wc-unsplash.jpg"
-    theme_mode = "dark"
-    wallpaper_scheme = "m3-tonal-spot"
-
-    [[wallpaper.favorite]]
-    community_palette = "GitHub Dark"
-    palette_source = "community"
-    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
-    theme_mode = "dark"
-
-    [[wallpaper.favorite]]
-    palette_source = "wallpaper"
-    path = "/home/mindset/Pictures/Wallpapers/sheng-l-q2dUSl9S4Xg-unsplash.jpg"
-    theme_mode = "dark"
-    wallpaper_scheme = "m3-tonal-spot"
+    path = "/home/mindset/Pictures/Wallpapers/37.png"
 
 [weather]
 refresh_minutes = 5
@@ -458,6 +504,9 @@ format = "{:%H:%M:%S}"
 [widget.cpu]
 stat = "cpu_temp"
 
+[widget.gamermode]
+type = "mindset/gamer-mode:gamermode"
+
 [widget.launcher]
 glyph = "brand-apple-filled"
 
@@ -467,17 +516,20 @@ type = "noctalia/notes:notes"
 [widget.privacy]
 hide_inactive = true
 
-[widget.recorder]
-type = "noctalia/screen_recorder:recorder"
-
 [widget.spacer_2]
 type = "spacer"
-
-[widget.summary]
-type = "gustav0ar/drive-health:summary"
 
 [widget.temp]
 stat = "gpu_temp"
 
 [widget.todo]
 type = "nightwatch75/todo:todo"
+
+[widget.toggle]
+type = "cleboost/hotspot:toggle"
+
+[widget.toggle_2]
+type = "mindset/hotspot:toggle"
+
+[widget.widget]
+type = "alexander/screen-toolkit:widget"

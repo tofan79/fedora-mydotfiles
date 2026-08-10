@@ -8,7 +8,7 @@ local M = "SUPER"
 -- Core
 -- ───────────────────────────────────────────
 hl.bind(M .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload && notify-send -u low 'Hyprland reloaded'"), { description = "Reload Hyprland config" })
-hl.bind(M .. " + SHIFT + K", hl.dsp.exec_cmd("~/.config/hypr/scripts/keybindings.sh"), { description = "Show keybindings" })
+hl.bind(M .. " + SHIFT + K", hl.dsp.exec_cmd("noctalia msg plugin mindset/keybind-cheatsheet:cheatsheet all toggle"), { description = "Show keybindings" })
 hl.bind(M .. " + Q", hl.dsp.window.close(), { description = "Close active window" })
 hl.bind(M .. " + Escape", hl.dsp.exec_cmd("noctalia msg panel-toggle session"), { description = "Session menu" })
 hl.bind(M .. " + CTRL + L", hl.dsp.exec_cmd("noctalia msg session lock"), { description = "Lock screen" })
@@ -29,7 +29,7 @@ hl.bind(M .. " + CTRL + backslash", hl.dsp.exec_cmd("noctalia msg panel-toggle n
 hl.bind(M .. " + ALT + period", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all clearResult"), { description = "Clear screen-toolkit result" })
 hl.bind(M .. " + ALT + comma", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all clearHistory"), { description = "Clear screen-toolkit history" })
 hl.bind(M .. " + CTRL + P", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all colorPicker"), { description = "Color picker" })
-hl.bind(M .. " + ALT + A", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all ocr"), { description = "Extract text from area" })
+hl.bind(M .. " + CTRL + A", hl.dsp.exec_cmd("noctalia msg plugin alexander/screen-toolkit:service all ocr"), { description = "Extract text from area" })
 
 -- ───────────────────────────────────────────
 -- Window Focus (Super + Arrows)
@@ -68,8 +68,8 @@ hl.bind(M .. " + ALT + T",
 -- ───────────────────────────────────────────
 -- Layout Controls
 -- ───────────────────────────────────────────
-hl.bind(M .. " + ALT + W", hl.dsp.exec_cmd("~/.config/hypr/scripts/switch-layouts.sh"),
-    { description = "Switch layout (rofi picker)" })
+hl.bind(M .. " + ALT + W", hl.dsp.exec_cmd("noctalia msg panel-toggle mindset/hypr-layouts:panel"),
+    { description = "Switch layout (panel)" })
 
 -- Window Cycling
 hl.bind("ALT + Tab", hl.dsp.window.cycle_next({ tiled = true }), { description = "Cycle windows" })
@@ -100,15 +100,15 @@ end
 -- ───────────────────────────────────────────
 hl.bind(M .. " + SHIFT + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/toggle-animations.sh"),
     { description = "Toggle animations" })
-hl.bind(M .. " + CTRL + A", hl.dsp.exec_cmd("~/.config/hypr/scripts/switch-animations.sh"),
-    { description = "Switch animation preset" })
--- Toggle Boost Mode (semua dekorasi off saat main game)
-hl.bind(M .. " + SHIFT + B", hl.dsp.exec_cmd("~/.config/hypr/scripts/toggle-boost-mode.sh"),
-    { description = "Toggle Boost (dek off)" })
-hl.bind(M .. " + CTRL + D", hl.dsp.exec_cmd("~/.config/hypr/scripts/switch-decorations.sh"),
-    { description = "Switch decoration preset" })
-hl.bind(M .. " + CTRL + S", hl.dsp.exec_cmd("~/.config/hypr/scripts/switch-windows.sh"),
-    { description = "Switch window preset" })
+hl.bind(M .. " + ALT + A", hl.dsp.exec_cmd("noctalia msg panel-toggle mindset/hypr-animations:panel"),
+    { description = "Switch animation preset (panel)" })
+-- Gamer Mode (suspend background hogs + dekorasi off + performance)
+hl.bind(M .. " + SHIFT + B", hl.dsp.exec_cmd("noctalia msg plugin mindset/gamer-mode:service all toggle"),
+    { description = "Toggle Gamer Mode" })
+hl.bind(M .. " + ALT + D", hl.dsp.exec_cmd("noctalia msg panel-toggle mindset/hypr-decorations:panel"),
+    { description = "Switch decoration preset (panel)" })
+hl.bind(M .. " + ALT + S", hl.dsp.exec_cmd("noctalia msg panel-toggle mindset/hypr-windows:panel"),
+    { description = "Switch window preset (panel)" })
 
 -- ───────────────────────────────────────────
 -- Scratchpad

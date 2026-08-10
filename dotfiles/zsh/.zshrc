@@ -15,6 +15,16 @@ source ~/.config/powerlevel10k/powerlevel10k.zsh-theme
 # ---- PATH ----
 export PATH="$HOME/.local/bin:$PATH"
 
+# ---- Zsh history (supaya arah panah ↑ tetap ingat command) ----
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=10000
+SAVEHIST=10000
+setopt SHARE_HISTORY          # langsung tulis + baca antar terminal
+setopt HIST_IGNORE_ALL_DUPS   # buang perintah duplikat dari history
+setopt HIST_REDUCE_BLANKS     # rapikan spasi berlebih
+setopt EXTENDED_HISTORY       # simpan timestamp tiap perintah
+
+
 # ---- Better man pages ----
 export MANROFFOPT="-c"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
@@ -31,6 +41,14 @@ alias cat='bat --style=plain'
 alias op='opencode'
 alias yz='yazi'
 alias nv='nvim'
+# DaVinci Resolve installer
+export DAVINCI="$HOME/Projects/davinci-resolve/install.sh"
+alias i-davinci='$DAVINCI install'
+alias r-davinci='$DAVINCI remove'
+alias f-davinci='$DAVINCI fix'
+alias u-davinci='$DAVINCI update'
+alias s-davinci='$DAVINCI status'
+alias d-davinci='$DAVINCI download'
 # ---- Docker / Podman ----
 alias d='docker'
 alias dps='docker ps'
@@ -72,6 +90,28 @@ fi
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
 export FZF_CTRL_R_OPTS='--height 40% --layout=reverse --border'
 export FZF_CTRL_T_OPTS='--height 40% --layout=reverse --border'
+eval "$(fzf --zsh)"           # aktifkan Ctrl+T (file), Ctrl+R (history), Alt+C (cd)
+
+# ---- Standard zsh behaviour ----
+setopt auto_cd               # ketik nama folder → langsung pindah ke sana
+setopt extended_glob         # glob lanjutan: ** , ^ , dst.
+setopt interactive_comments  # izinkan komentar (#) di shell interaktif
+setopt AUTO_PUSHD            # cd otomatis dicatat ke stack (pakai `dirs` / `cd -`)
+setopt PUSHD_IGNORE_DUPS     # jangan duplikat entri di stack
+setopt ALWAYS_TO_END         # kursor berhenti di akhir saat tab-complete
+
+# Completion case-insensitive (ketik huruf besar/kecil bebas)
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+
+# Word navigation: Ctrl+→ / Ctrl+← lompat antar kata
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word
+
+# Directory shortcuts
+alias -- ..='cd ..'
+alias -- ...='cd ../..'
+alias -- ....='cd ../../..'
+alias -- -='cd -'
 
 # ---- mise ----
 eval "$(~/.local/bin/mise activate zsh)"
