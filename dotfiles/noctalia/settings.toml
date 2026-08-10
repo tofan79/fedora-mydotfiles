@@ -452,6 +452,7 @@ wallpaper_scheme = "m3-tonal-spot"
     builtin_ids = [ "btop", "cava", "foot", "gtk3", "gtk4", "hyprland", "kcolorscheme", "qt" ]
     community_ids = [
         "opencode",
+        "zen-browser",
         "telegram",
         "inkscape",
         "libreoffice",
@@ -477,13 +478,13 @@ transition_on_startup = true
     interval_seconds = 600
 
     [wallpaper.default]
-    path = "/home/mindset/Pictures/Wallpapers/37.png"
+    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
 
     [wallpaper.last]
-    path = "/home/mindset/Pictures/Wallpapers/37.png"
+    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
 
     [wallpaper.monitors.eDP-1]
-    path = "/home/mindset/Pictures/Wallpapers/37.png"
+    path = "/home/mindset/Pictures/Wallpapers/BG03.png"
 
 [weather]
 refresh_minutes = 5
