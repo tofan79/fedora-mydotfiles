@@ -8,7 +8,7 @@ local M = "SUPER"
 -- Core
 -- ───────────────────────────────────────────
 hl.bind(M .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload && notify-send -u low 'Hyprland reloaded'"), { description = "Reload Hyprland config" })
-hl.bind(M .. " + SHIFT + K", hl.dsp.exec_cmd("noctalia msg plugin mindset/keybind-cheatsheet:cheatsheet all toggle"), { description = "Show keybindings" })
+hl.bind(M .. " + SHIFT + K", hl.dsp.exec_cmd("noctalia msg panel-toggle mindset/keybind-cheatsheet:cheatsheet"), { description = "Show keybindings" })
 hl.bind(M .. " + Q", hl.dsp.window.close(), { description = "Close active window" })
 hl.bind(M .. " + Escape", hl.dsp.exec_cmd("noctalia msg panel-toggle session"), { description = "Session menu" })
 hl.bind(M .. " + CTRL + L", hl.dsp.exec_cmd("noctalia msg session lock"), { description = "Lock screen" })
